@@ -14,21 +14,23 @@ CLIENT_ID = config.client_id
 CLIENT_SECRET = config.client_secret
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
-TARGET_CHANNEL = 'Twitch' # Placeholder; Enter the Twitch channel that you wish to view 
+TARGET_CHANNEL = 'jasontheween' # Placeholder; Enter the Twitch channel that you wish to view 
 
 # Chat messages
 async def on_message(msg: ChatMessage):
     text = msg.text
     print(f"{msg.user.display_name}: {text}")
+#------------------Chat Sentiment-----------------#
+    text = TextBlob(text)
+    polarity, subjectivity = text.sentiment
+    print(f"{polarity}, {subjectivity}")
     
-
-
 async def on_ready(ready_event: EventData):
     # Connect to target channel
     await ready_event.chat.join_room(TARGET_CHANNEL)
 
-    # Bot Status message
-    print("Bot Status: Ready")
+    # Status message
+    print("Bot Status: Ready\n")
 
 async def run_bot():
     # Authenticate
@@ -44,16 +46,23 @@ async def run_bot():
     chat.register_event(ChatEvent.READY, on_ready)
     chat.register_event(ChatEvent.MESSAGE, on_message)
 
+    # Countdown
+    print('Booting up in 3...')
+    await asyncio.sleep(1)
+    print('2...')
+    await asyncio.sleep(1)
+    print('1...')
+    await asyncio.sleep(1)
+
     # Start bot
     chat.start()
 
     try:
-        input('Press "ENTER" to stop\n')
+        input('\nPress "ENTER" to stop\n')
     finally:
         chat.stop()
         await bot.close()
-        # Bot Status message
+        # Status message
         print("Bot Status: Off")
 
 asyncio.run(run_bot())
-

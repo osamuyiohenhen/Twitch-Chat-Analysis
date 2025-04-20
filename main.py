@@ -14,7 +14,7 @@ CLIENT_ID = config.client_id
 CLIENT_SECRET = config.client_secret
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
-TARGET_CHANNEL = 'jasontheween' # Placeholder; Enter the Twitch channel that you wish to view 
+TARGET_CHANNEL = 'Twitch' # Placeholder; Enter the Twitch channel that you wish to view 
 
 # Chat messages
 async def on_message(msg: ChatMessage):

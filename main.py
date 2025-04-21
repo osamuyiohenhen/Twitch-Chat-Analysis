@@ -4,9 +4,11 @@ from twitchAPI.type import AuthScope, ChatEvent
 from twitchAPI.oauth import UserAuthenticator
 from twitchAPI.twitch import Twitch
 import asyncio
-from textblob import TextBlob
 
-# Contains APP_ID & APP_SECRET
+from transformers import pipeline
+import torch
+
+# Contains APP_ID & APP_SECRET & TARGET_CHANNEL
 import config
 
 # Set up Constants
@@ -14,16 +16,22 @@ CLIENT_ID = config.client_id
 CLIENT_SECRET = config.client_secret
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
-TARGET_CHANNEL = 'Twitch' # Placeholder; Enter the Twitch channel that you wish to view 
+CLASSIFIER = pipeline(model="lxyuan/distilbert-base-multilingual-cased-sentiments-student", top_k=None)
+
+TARGET_CHANNEL = config.channel # Placeholder; Enter the Twitch channel that you wish to view: i.e. "Twitch"
 
 # Chat messages
 async def on_message(msg: ChatMessage):
-    text = msg.text
-    print(f"{msg.user.display_name}: {text}")
+    print(f"{msg.user.display_name}: {msg.text}")
 #------------------Chat Sentiment-----------------#
-    text = TextBlob(text)
-    polarity, subjectivity = text.sentiment
-    print(f"{polarity}, {subjectivity}")
+    sentiment = CLASSIFIER(msg.text)
+    result = sentiment[0]
+    dict1 = result[0]
+    label1, score1 = dict1['label'], dict1['score']
+
+
+    print(f"{label1}, {score1}")
+
     
 async def on_ready(ready_event: EventData):
     # Connect to target channel
@@ -31,7 +39,7 @@ async def on_ready(ready_event: EventData):
 
     # Status message
     print("Bot Status: Ready\n")
-
+    
 async def run_bot():
     # Authenticate
     bot = await Twitch(CLIENT_ID, CLIENT_SECRET)
@@ -62,6 +70,7 @@ async def run_bot():
     finally:
         chat.stop()
         await bot.close()
+        
         # Status message
         print("Bot Status: Off")
 

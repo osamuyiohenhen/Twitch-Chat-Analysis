@@ -1,7 +1,7 @@
 # My First Github Project
 (WIP) This is my first independent Github project. I wanted to make this something I was somewhat passionate about, so I decided to work with TwitchAPI. This is currently an simple automated bot that interacts with a channel's chat (chosen by user), and displays it in the terminal.
 
-# Main packages required:
+# Main packages required (installed with pip):
 twitchAPI <br/>
 textblob
 

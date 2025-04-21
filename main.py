@@ -32,14 +32,13 @@ async def on_message(msg: ChatMessage):
 
     print(f"{label1}, {score1}")
 
-    
 async def on_ready(ready_event: EventData):
     # Connect to target channel
     await ready_event.chat.join_room(TARGET_CHANNEL)
 
     # Status message
     print("Bot Status: Ready\n")
-    
+
 async def run_bot():
     # Authenticate
     bot = await Twitch(CLIENT_ID, CLIENT_SECRET)

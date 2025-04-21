@@ -3,7 +3,7 @@
 
 # Main packages required (installed with pip):
 twitchAPI <br/>
-transformers (huggingface)
+transformers (huggingface) <br/>
 torch
 
 Note: This chatbot is currently configured using my own Twitch.tv ClientID and ClientSecret. To configure the bot using a separate account, please create a separate Twitch account and log into the Twitch Developer Console. 

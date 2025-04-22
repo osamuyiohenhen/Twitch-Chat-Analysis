@@ -6,7 +6,6 @@ from twitchAPI.twitch import Twitch
 import asyncio
 
 from transformers import pipeline
-import torch
 
 # Contains APP_ID & APP_SECRET & TARGET_CHANNEL
 import config
@@ -16,7 +15,7 @@ CLIENT_ID = config.client_id
 CLIENT_SECRET = config.client_secret
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
-CLASSIFIER = pipeline(model="lxyuan/distilbert-base-multilingual-cased-sentiments-student", top_k=None)
+CLASSIFIER = pipeline(model="cardiffnlp/twitter-roberta-base-sentiment-latest", top_k=None)
 
 TARGET_CHANNEL = config.channel # Placeholder; Enter the Twitch channel that you wish to view: i.e. "Twitch"
 
@@ -25,12 +24,10 @@ async def on_message(msg: ChatMessage):
     print(f"{msg.user.display_name}: {msg.text}")
 #------------------Chat Sentiment-----------------#
     sentiment = CLASSIFIER(msg.text)
-    result = sentiment[0]
-    dict1 = result[0]
-    label1, score1 = dict1['label'], dict1['score']
 
+    top_label, top_score = sentiment[0][0]['label'], sentiment[0][0]['score']
 
-    print(f"{label1}, {score1}")
+    print(f"{top_label}, {top_score}")
 
 async def on_ready(ready_event: EventData):
     # Connect to target channel
@@ -41,25 +38,26 @@ async def on_ready(ready_event: EventData):
 
 async def run_bot():
     # Authenticate
+    print("Authenicating...")
     bot = await Twitch(CLIENT_ID, CLIENT_SECRET)
     auth = UserAuthenticator(bot, USER_SCOPE)
     token, refresh_token = await auth.authenticate()
     await bot.set_user_authentication(token, USER_SCOPE, refresh_token)
-
+    
     # Initialize chat class
     chat = await Chat(bot)
-
+    print("Authenication done.")
     # Register events
     chat.register_event(ChatEvent.READY, on_ready)
     chat.register_event(ChatEvent.MESSAGE, on_message)
 
-    # Countdown
-    print('Booting up in 3...')
-    await asyncio.sleep(1)
-    print('2...')
-    await asyncio.sleep(1)
-    print('1...')
-    await asyncio.sleep(1)
+    # Countdown (optional)
+    # print('Booting up in 3...')
+    # await asyncio.sleep(1)
+    # print('2...')
+    # await asyncio.sleep(1)
+    # print('1...')
+    # await asyncio.sleep(1)
 
     # Start bot
     chat.start()
@@ -71,6 +69,6 @@ async def run_bot():
         await bot.close()
         
         # Status message
-        print("Bot Status: Off")
+        print("\nBot Status: Off")
 
 asyncio.run(run_bot())

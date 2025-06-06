@@ -55,3 +55,21 @@ This project was started due to an interest in Twitch communities and a desire t
         channel = 'name_of_twitch_channel_to_join'
         # Add any other necessary configurations
         ```
+
+## How to Use:
+
+1.  Make sure your `config.py` file is set up correctly with your API keys and target channel.
+2.  Run the main bot script:
+    ```bash
+    python main.py
+    ```
+3.  The first time you run it, the script will likely guide you through an authentication process in your web browser to grant the necessary permissions.
+4.  Once authenticated, the bot should connect to the specified Twitch channel, and you will see chat messages and sentiment scores pop up in your terminal.
+5.  Press "ENTER" in the terminal where the script is running to stop the bot.
+
+## Potential Future Additions:
+
+* Storing sentiment data for analysis.
+* Implementing user-interactive bot commands.
+* Exploring additional NLP features.
+* Improving configurability of settings.

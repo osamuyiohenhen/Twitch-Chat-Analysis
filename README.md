@@ -19,5 +19,39 @@ This project was started due to an interest in Twitch communities and a desire t
 * `twitchAPI`
 * `asyncio`
 * `transformers` (Hugging Face)
-* `python-dotenv` (likely used by `config.py` to load environment variables)
 * `config.py` (for storing/accessing configuration like API keys and target channel)
+
+## Getting it Running:
+
+1.  **Clone it:**
+    ```bash
+    git clone [https://github.com/osamuyiohenhen/Twitch-Chat-Analysis](https://github.com/osamuyiohenhen/Twitch-Chat-Analysis)
+    cd Twitch-Chat-Analysis
+    ```
+
+2.  **Make a virtual environment (good idea):**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # Or venv\Scripts\activate on Windows
+    ```
+
+3.  **Install the stuff:**
+    Make sure you have a `requirements.txt` file (you can make one with `pip freeze > requirements.txt` after installing things).
+    Then run:
+    ```bash
+    pip install -r requirements.txt
+    ```
+    *You'll definitely need `twitchAPI`, `transformers`, and `torch` (or `tensorflow` if you prefer that).*
+
+4.  **Twitch API Keys & Config:**
+    * You need to register an app on the [Twitch Developer Console](https://dev.twitch.tv/console) to get a **Client ID** and **Client Secret**.
+    * Open the `config.py` file in the project.
+    * **IMPORTANT: Be careful not to commit your actual secrets to GitHub if `config.py` is tracked. Ideally, `config.py` would load from a `.env` file or you'd use a `config_example.py` and have users copy it to `config.py` which is then gitignored.** For this setup, assuming you'll directly edit `config.py`:
+    * Modify `config.py` to include your credentials and target channel:
+        ```python
+        # Inside config.py
+        client_id = 'YOUR_CLIENT_ID_HERE'
+        client_secret = 'YOUR_CLIENT_SECRET_HERE'
+        channel = 'name_of_twitch_channel_to_join'
+        # Add any other necessary configurations
+        ```

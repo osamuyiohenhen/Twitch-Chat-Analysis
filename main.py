@@ -25,9 +25,17 @@ async def on_message(msg: ChatMessage):
 #------------------Chat Sentiment-----------------#
     sentiment = CLASSIFIER(msg.text)
 
+    # Print the main sentiment analysis
     top_label, top_score = sentiment[0][0]['label'], sentiment[0][0]['score']
+    print(f"Main sentiment: {top_label}, Score: {top_score:.3f}")
 
-    print(f"{top_label}, {top_score}")
+    # Optional: Print the second most likely sentiment
+    # mid_label, mid_score = sentiment[0][1]['label'], sentiment[0][1]['score']
+    # print(f"Second sentiment: {mid_label}, Score: {mid_score:.3f}")
+
+    # Optional: Print the third most likely sentiment
+    # bot_label, bot_score = sentiment[0][2]['label'], sentiment[0][2]['score']
+    # print(f"Third sentiment: {bot_label}, Score: {bot_score:.3f}")
 
 async def on_ready(ready_event: EventData):
     # Connect to target channel

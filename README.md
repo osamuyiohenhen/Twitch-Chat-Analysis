@@ -25,7 +25,7 @@ This project was started due to an interest in Twitch communities and a desire t
 
 1.  **Clone it:**
     ```bash
-    git clone [https://github.com/osamuyiohenhen/Twitch-Chat-Analysis](https://github.com/osamuyiohenhen/Twitch-Chat-Analysis)
+    git clone [https://github.com/osamuyiohenhen/Twitch-Chat-Analysis.git](https://github.com/osamuyiohenhen/Twitch-Chat-Analysis.git)
     cd Twitch-Chat-Analysis
     ```
 

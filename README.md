@@ -1,8 +1,23 @@
-# My First Github Project
-(WIP) This is my first independent Github project. I wanted to make this something I was somewhat passionate about, so I decided to work with TwitchAPI. This is currently an simple automated bot that interacts with a channel's chat (chosen by user), and displays it in the terminal.
+# Twitch Chat Sentiment Bot (WIP)
 
-# Main packages required (installed with pip):
-twitchAPI <br/>
-transformers (huggingface) <br/>
+This is a Python bot in development for Twitch chat. In its current state, the bot connects to a twitch channel, retrieves chat messages, and attempts to determine if they are positive, neutral, or negative.
 
-Note: This chatbot is currently configured using my own Twitch.tv ClientID and ClientSecret. To configure the bot using a separate account, please create a separate Twitch account and log into the Twitch Developer Console. 
+This project was started due to an interest in Twitch communities and a desire to experiment with natural language processing on live chat data.
+
+## What it does (so far):
+
+* Uses `twitchAPI` to connect to a Twitch channel's chat.
+* Reads new messages as they come in.
+* Uses Hugging Face `transformers` to guess the sentiment of each message.
+* Prints the chat and its sentiment to your terminal.
+* Runs with `asyncio` to keep things speedy.
+* Uses OAuth for Twitch API access via user authentication.
+
+## Tech Stack:
+
+* Python 3
+* `twitchAPI`
+* `asyncio`
+* `transformers` (Hugging Face)
+* `python-dotenv` (likely used by `config.py` to load environment variables)
+* `config.py` (for storing/accessing configuration like API keys and target channel)

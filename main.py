@@ -37,15 +37,16 @@ async def on_message(msg: ChatMessage):
     # bot_label, bot_score = sentiment[0][2]['label'], sentiment[0][2]['score']
     # print(f"Third sentiment: {bot_label}, Score: {bot_score:.3f}")
 
-async def on_ready(ready_event: EventData):
-    # Connect to target channel
-    channel_name = "plaqueboymax"
-    await ready_event.chat.join_room(channel_name)
-
-    # Status message
-    print("Bot Status: Ready\n")
 
 async def run_bot():
+
+    target_channel = input("\nEnter the channel you wish to connect to: ")
+
+    async def on_ready(ready_event: EventData):
+    # Connect to target channel
+        await ready_event.chat.join_room(target_channel)
+        # Status message
+        print("Bot Status: Ready\n")
 
     # Authenticate
     print("Authenicating...")

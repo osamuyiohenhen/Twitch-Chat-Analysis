@@ -1,6 +1,6 @@
-# Twitch Chat Sentiment Bot (WIP)
+# Twitch Chat Sentiment Analysis (WIP)
 
-This is a Python bot in development for Twitch chat. In its current state, the bot connects to a twitch channel, retrieves chat messages, and attempts to determine if they are positive, neutral, or negative.
+This is a Python data engine in development for Twitch chat. In its current state, a chatbot connects to a twitch channel, retrieves chat messages, and attempts to determine if they are positive, neutral, or negative. In future updates, I plan to have it track multiple metrics at once, and possibly implement a data stream to physically represents these statistics on an Arduino or even an FPGA.
 
 This project was started due to an interest in Twitch communities and a desire to experiment with natural language processing on live chat data.
 
@@ -70,6 +70,7 @@ This project was started due to an interest in Twitch communities and a desire t
 ## Potential Future Additions:
 
 * Storing sentiment data for analysis.
+* Data link to a separate hardware board.
 * Implementing user-interactive bot commands.
 * Exploring additional NLP features.
 * Improving configurability of settings.

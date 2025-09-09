@@ -1,4 +1,4 @@
-# Twitch Chat Sentiment Analysis (WIP)
+# Real-Time Twitch Chat Analytics Engine
 
 This is a Python data engine in development for Twitch chat. In its current state, a chatbot connects to a twitch channel, retrieves chat messages, and attempts to determine if they are positive, neutral, or negative. In future updates, I plan to have it track multiple metrics at once, and possibly implement a data stream to physically represents these statistics on an Arduino or even an FPGA.
 

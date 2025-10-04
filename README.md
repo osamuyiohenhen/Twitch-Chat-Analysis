@@ -52,7 +52,6 @@ This project was started due to an interest in Twitch communities and a desire t
         # Inside config.py
         client_id = 'YOUR_CLIENT_ID_HERE'
         client_secret = 'YOUR_CLIENT_SECRET_HERE'
-        channel = 'name_of_twitch_channel_to_join'
         # Add any other necessary configurations
         ```
 

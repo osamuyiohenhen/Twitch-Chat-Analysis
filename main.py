@@ -132,7 +132,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         # the program can occasionally get stuck when trying to exit the API connection. Since this would be the end of the program,
         # it should generally be okay to use the terminating function, os._exit(), however use with caution for your use case.
-        print("\Program manually stopped.")
+        print("\nProgram manually stopped.")
         os._exit(0)
     finally:
         # Exit program entirely (may have to swap out with os._exit())

@@ -1,6 +1,6 @@
-# Twitch Chat Sentiment Bot (WIP)
+# Real Time Twitch Chat Sentiment Engine (WIP)
 
-This is a Python bot in development for Twitch chat. In its current state, the bot connects to a twitch channel, retrieves chat messages, and attempts to determine if they are positive, neutral, or negative.
+This is a Python program in development for Twitch chat. In its current state, the program uses an account to connect to a twitch channel, retrieves chat messages, and attempts to determine if they are positive, neutral, or negative.
 
 This project was started due to an interest in Twitch communities and a desire to experiment with natural language processing on live chat data.
 
@@ -59,13 +59,13 @@ This project was started due to an interest in Twitch communities and a desire t
 ## How to Use:
 
 1.  Make sure your `config.py` file is set up correctly with your API keys and target channel.
-2.  Run the main bot script:
+2.  Run the main program script:
     ```bash
     python main.py
     ```
 3.  The first time you run it, the script will likely guide you through an authentication process in your web browser to grant the necessary permissions.
-4.  Once authenticated, the bot should connect to the specified Twitch channel, and you will see chat messages and sentiment scores pop up in your terminal.
-5.  Press "ENTER" in the terminal where the script is running to stop the bot.
+4.  Once authenticated, the program should connect to the specified Twitch channel, and you will see chat messages and sentiment scores pop up in your terminal.
+5.  Press "ENTER" in the terminal where the script is running to stop the process.
 
 ## Potential Future Additions:
 

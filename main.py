@@ -124,7 +124,7 @@ async def main():
         # Initialize program closing coroutine (can be possibly finnicky, so mind that)
         await twitch.close()
 
-        print("\Program Status: Off")
+        print("\nProgram Status: Off")
 
 if __name__ == '__main__':
     try:

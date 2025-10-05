@@ -1,7 +1,10 @@
-# Real-Time Twitch Chat Analytics Engine
+# My First Github Project
+(WIP) This is my first independent Github project. I wanted to make this something I was somewhat passionate about, so I decided to work with TwitchAPI. This is currently an simple automated bot that interacts with a channel's chat (chosen by user), and displays it in the terminal.
 
-This is a Python data engine in development for Twitch chat. In its current state, a chatbot connects to a twitch channel, retrieves chat messages, and attempts to determine if they are positive, neutral, or negative. In future updates, I plan to have it track multiple metrics at once, and possibly implement a data stream to physically represents these statistics on an Arduino or even an FPGA.
+# Main packages required:
+twitchAPI  textblob
 
+Note: This chatbot is currently configured using my own Twitch.tv ClientID and ClientSecret. To configure the bot using a separate account, please create a separate Twitch account and log into the Twitch Developer Console. 
 This project was started due to an interest in Twitch communities and a desire to experiment with natural language processing on live chat data.
 
 ## What it does (so far):
@@ -52,25 +55,23 @@ This project was started due to an interest in Twitch communities and a desire t
         # Inside config.py
         client_id = 'YOUR_CLIENT_ID_HERE'
         client_secret = 'YOUR_CLIENT_SECRET_HERE'
-        channel = 'name_of_twitch_channel_to_join'
         # Add any other necessary configurations
         ```
 
 ## How to Use:
 
 1.  Make sure your `config.py` file is set up correctly with your API keys and target channel.
-2.  Run the main bot script:
+2.  Run the main program script:
     ```bash
     python main.py
     ```
 3.  The first time you run it, the script will likely guide you through an authentication process in your web browser to grant the necessary permissions.
-4.  Once authenticated, the bot should connect to the specified Twitch channel, and you will see chat messages and sentiment scores pop up in your terminal.
-5.  Press "ENTER" in the terminal where the script is running to stop the bot.
+4.  Once authenticated, the program should connect to the specified Twitch channel, and you will see chat messages and sentiment scores pop up in your terminal.
+5.  Press "ENTER" in the terminal where the script is running to stop the process.
 
 ## Potential Future Additions:
 
 * Storing sentiment data for analysis.
-* Data link to a separate hardware board.
 * Implementing user-interactive bot commands.
 * Exploring additional NLP features.
 * Improving configurability of settings.

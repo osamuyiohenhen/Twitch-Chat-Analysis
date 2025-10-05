@@ -26,7 +26,7 @@ USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 # Current model for sentiment analysis (working on fine-tuning it in the future)
 CLASSIFIER = pipeline(model="cardiffnlp/twitter-roberta-base-sentiment-latest", top_k=None)
 
-# Various known Twitch chatbots that can be ignored.
+# Various known Twitch chatbots that can be ignored
 BOT_LIST = {'fossabot', 'nightbot', 'streamelements', "potatbotat"} 
 
 async def on_message(msg: ChatMessage):

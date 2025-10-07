@@ -1,5 +1,8 @@
 # Real Time Twitch Chat Sentiment Engine
 
+### Demo in Action
+![Demo of Twitch Chat Analyzer](demo.gif)
+
 This is a Python program in development for Twitch chat. In its current state, the program uses an account to connect to a twitch channel, retrieves chat messages, and attempts to determine if they are positive, neutral, or negative.
 
 This project was started due to an interest in Twitch communities and a desire to experiment with natural language processing on live chat data.

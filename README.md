@@ -1,10 +1,7 @@
-# My First Github Project
-(WIP) This is my first independent Github project. I wanted to make this something I was somewhat passionate about, so I decided to work with TwitchAPI. This is currently an simple automated bot that interacts with a channel's chat (chosen by user), and displays it in the terminal.
+# Real Time Twitch Chat Sentiment Engine
 
-# Main packages required:
-twitchAPI  textblob
+This is a Python program in development for Twitch chat. In its current state, the program uses an account to connect to a twitch channel, retrieves chat messages, and attempts to determine if they are positive, neutral, or negative.
 
-Note: This chatbot is currently configured using my own Twitch.tv ClientID and ClientSecret. To configure the bot using a separate account, please create a separate Twitch account and log into the Twitch Developer Console. 
 This project was started due to an interest in Twitch communities and a desire to experiment with natural language processing on live chat data.
 
 ## What it does (so far):

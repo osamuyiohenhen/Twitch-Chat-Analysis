@@ -4,7 +4,7 @@ This is a Python program in development for Twitch chat. In its current state, t
 
 This project was started due to an interest in Twitch communities and a desire to experiment with natural language processing on live chat data.
 
-## What it does (so far):
+## What it does (so far)
 
 * Uses `twitchAPI` to connect to a Twitch channel's chat.
 * Reads new messages as they come in.
@@ -13,7 +13,7 @@ This project was started due to an interest in Twitch communities and a desire t
 * Runs with `asyncio` to keep things speedy.
 * Uses OAuth for Twitch API access via user authentication.
 
-## Tech Stack:
+## Tech Stack
 
 * Python 3
 * `twitchAPI`
@@ -21,7 +21,7 @@ This project was started due to an interest in Twitch communities and a desire t
 * `transformers` (Hugging Face)
 * `config.py` (for storing/accessing configuration like API keys and target channel)
 
-## Getting it Running:
+## Getting it Running
 
 1.  **Clone it:**
     ```bash
@@ -55,7 +55,7 @@ This project was started due to an interest in Twitch communities and a desire t
         # Add any other necessary configurations
         ```
 
-## How to Use:
+## How to Use
 
 1.  Make sure your `config.py` file is set up correctly with your API keys and target channel.
 2.  Run the main program script:
@@ -66,7 +66,7 @@ This project was started due to an interest in Twitch communities and a desire t
 4.  Once authenticated, the program should connect to the specified Twitch channel, and you will see chat messages and sentiment scores pop up in your terminal.
 5.  Press "ENTER" in the terminal where the script is running to stop the process.
 
-## Potential Future Additions:
+## Potential Future Additions
 
 * Storing sentiment data for analysis.
 * Implementing user-interactive bot commands.

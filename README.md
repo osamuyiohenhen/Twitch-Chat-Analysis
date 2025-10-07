@@ -67,7 +67,7 @@ This project was started due to an interest in Twitch communities and a desire t
 5.  Press "ENTER" in the terminal where the script is running to stop the process.
 
 ## Potential Future Additions
-
+* Fine-tuning model for better accuracy with nuanced slang.
 * Storing sentiment data for analysis.
 * Implementing user-interactive bot commands.
 * Exploring additional NLP features.

@@ -135,5 +135,5 @@ if __name__ == '__main__':
         print("\nProgram manually stopped.")
         os._exit(0)
     finally:
-        # Exit program entirely (may have to swap out with os._exit())
-        sys.exit(0) 
+        # Exit program entirely
+        os._exit(0) 

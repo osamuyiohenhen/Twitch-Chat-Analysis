@@ -173,3 +173,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 config.py
+
+# Twitch roBERTa Model files
+twitch_roberta_v1/
+twitch_roberta_v2/

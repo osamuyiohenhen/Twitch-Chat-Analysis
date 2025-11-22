@@ -174,3 +174,11 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 config.py
+
+# Ignore Model Checkpoints and Weights
+twitch-roberta-v1/
+twitch-roberta-v2/
+checkpoint-*/
+*.safetensors
+*.bin
+*.pt

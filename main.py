@@ -4,13 +4,13 @@ from twitchAPI.type import AuthScope, ChatEvent
 from twitchAPI.oauth import UserAuthenticator
 from twitchAPI.twitch import Twitch
 import asyncio
-# import time (diagnostic purposes)
+import time # (diagnostic purposes)
 import sys
 import os
 
 # # Data Extraction (this is for model training purposes. You can ignore this.)
-# from aiocsv import AsyncWriter
-# import aiofiles
+from aiocsv import AsyncWriter
+import aiofiles
 
 from transformers import pipeline
 
@@ -23,41 +23,74 @@ CLIENT_SECRET = config.client_secret
 # Defines what the program is authorized to do. Since this is a basic program, it can simply read and write chat messages.
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
-# Current model for sentiment analysis (working on fine-tuning it in the future)
-CLASSIFIER = pipeline(model="cardiffnlp/twitter-roberta-base-sentiment-latest", top_k=None)
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+import torch
+
+MODEL_DIR = "./twitch-roberta-v1" # Point to your trained folder
+
+# 1. Load the Tokenizer (The Dictionary)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, local_files_only=True)
+
+# 2. Load the Model (The Brain Surgery)
+# I added 'num_labels=3' to FORCE it to create 3 output slots (Neg, Neu, Pos)
+# If you don't do this, it might default to 2 and break your analysis code.
+model = AutoModelForSequenceClassification.from_pretrained(
+    MODEL_DIR, 
+    local_files_only=True,
+    num_labels=3, 
+    problem_type="multi_label_classification" # Optional: Helps if you are doing strict classification
+)
+
+# 3. Hardware Check
+device = 0 if torch.cuda.is_available() else -1
+
+# 4. The Pipeline
+# We pass the explicit 'model' object, so the pipeline doesn't have to guess.
+CLASSIFIER = pipeline(
+    "text-classification", 
+    model=model, 
+    tokenizer=tokenizer, 
+    device=device, 
+    top_k=None # Return all scores so you can see the confusion
+)
+
+print("Model loaded successfully!")
 
 # Various known Twitch chatbots that can be ignored
 BOT_LIST = {'fossabot', 'nightbot', 'streamelements', "potatbotat"} 
 
 async def on_message(msg: ChatMessage):
-    if msg.user.display_name.lower() in BOT_LIST:
-        print(f"--- Ignoring bot message from: {msg.user.display_name} ---")
-        return
-    elif msg.text[0] == '!':
-        print(f"---Ignoring Command from: {msg.user.display_name}")
-        return
-    
+    # if msg.user.display_name.lower() in BOT_LIST:
+    #     print(f"--- Ignoring bot message from: {msg.user.display_name} ---")
+    #     return
+    # elif msg.text[0] == '!':
+    #     print(f"---Ignoring Command from: {msg.user.display_name}")
+    #     return
+
     print(f"{msg.user.display_name}: {msg.text}")
 #------------------Chat Sentiment-----------------#
+    start = time.perf_counter()
     sentiment = CLASSIFIER(msg.text)
+    end = time.perf_counter()
+    latency_ms = (end - start) * 1000
     # Print the main sentiment analysis
     top_label, top_score = sentiment[0][0]['label'], sentiment[0][0]['score']
-    print(f"Main sentiment: {top_label}, Score: {top_score:.3f}")
+    print(f"Main sentiment: {top_label}, Score: {top_score:.3f} [{latency_ms:.2f} ms]")
 
     # Optional: Print the second most likely sentiment
-    # mid_label, mid_score = sentiment[0][1]['label'], sentiment[0][1]['score']
-    # print(f"Second sentiment: {mid_label}, Score: {mid_score:.3f}")
+    mid_label, mid_score = sentiment[0][1]['label'], sentiment[0][1]['score']
+    print(f"Second sentiment: {mid_label}, Score: {mid_score:.3f}")
     # Optional: Print the third most likely sentiment
-    # bot_label, bot_score = sentiment[0][2]['label'], sentiment[0][2]['score']
-    # print(f"Third sentiment: {bot_label}, Score: {bot_score:.3f}")
+    bot_label, bot_score = sentiment[0][2]['label'], sentiment[0][2]['score']
+    print(f"Third sentiment: {bot_label}, Score: {bot_score:.3f}")
     
 # #-----------------Data Extraction-----------------# This is for model training purposes. You can ignore this.
-#     data_for_csv = [msg.user.name, msg.text]
-# #     await save_message(data_for_csv)
-# async def save_message(message):
-#     async with aiofiles.open("twitch_data.csv", mode='a', newline='', encoding='utf-8') as f:
-#         writer = AsyncWriter(f)
-#         await writer.writerow(message)
+    data_for_csv = [msg.user.name, msg.text] # , "", top_label, f"{top_score:.3f}"
+    await save_message(data_for_csv)
+async def save_message(message):
+    async with aiofiles.open("twitch_chat.csv", mode='a', newline='', encoding='utf-8') as f:
+        writer = AsyncWriter(f)
+        await writer.writerow(message)
 
 # Main function
 async def main():
@@ -91,9 +124,7 @@ async def main():
                 current_channel = None
 
             target_channel = input("\nEnter the Twitch channel you wish to connect to (or type 'q' to exit): ").lower()
-            if target_channel == 'q':
-                break
-            
+            if target_channel == 'q': break
             if not target_channel:
                 print("Channel name cannot be empty. Please try again.")
                 continue

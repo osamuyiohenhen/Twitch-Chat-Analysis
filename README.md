@@ -31,6 +31,10 @@ I moved away from generic models like GPT-4 or stock RoBERTa for a custom approa
 * **Why Local?** Cloud APIs are slow and expensive. This runs entirely on-premise.
 * **Performance:** Optimized for NVIDIA GPUs using PyTorch/CUDA. It currently achieves **<50ms inference latency** per message on consumer hardware (RTX 4050).
 
+### Constraint: Data Scarcity
+Hand-labeling 100,000 messages for sentiment is impossible for a solo engineer.
+* **Solution:** **Domain Adaptation**. By pre-training on *unlabeled* data first, I reduced the model's **Perplexity** from ~134 to ~9. The model learned the "language" of Twitch unsupervised, meaning I only need to hand-label a tiny fraction (2k messages) for the final fine-tuning stage.
+
 ---
 
 ## 🛠️ Tech Stack
@@ -38,7 +42,7 @@ I moved away from generic models like GPT-4 or stock RoBERTa for a custom approa
 * **Language:** Python 3
 * **ML Framework:** PyTorch, Hugging Face Transformers
 * **Data & Async:** `asyncio`, `aiofiles`, `aiocsv`
-* **API:** `twitchAPI` (OAuth2)
+* **API:** `twitchAPI` (OAuth2 Authentication)
 
 ---
 
@@ -48,3 +52,58 @@ I moved away from generic models like GPT-4 or stock RoBERTa for a custom approa
 ```bash
 git clone [https://github.com/osamuyiohenhen/Twitch-Chat-Analysis.git](https://github.com/osamuyiohenhen/Twitch-Chat-Analysis.git)
 cd Twitch-Chat-Analysis
+```
+
+### 2. Set up the Environment
+Create a virtual environment to keep dependencies clean.
+```bash
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# Mac/Linux
+source .venv/bin/activate
+```
+
+### 3. Install Dependencies
+Note: If you have an NVIDIA GPU, install the CUDA version of PyTorch first to enable hardware acceleration.
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Twitch API Keys & Config
+You need to register an app on the Twitch Developer Console to get a Client ID and Client Secret.
+1. Create a file named `config.py` in the root folder.
+2. Add your credentials as shown below:
+```bash
+# config.py
+client_id = 'YOUR_TWITCH_CLIENT_ID'
+client_secret = 'YOUR_TWITCH_CLIENT_SECRET'
+# Add any other necessary configurations
+```
+**⚠️ IMPORTANT:**  Ensure `config.py` is added to your `.gitignore` file so you do not accidentally commit your credentials to GitHub.
+
+### How to Use
+1. Make sure your config.py is set up.
+2. Run the main program:
+```bash
+python main.py
+```
+3. **First Run:** The script will open your browser to authenticate with Twitch.
+
+4. **Connect:** Enter the channel name you want to analyze (e.g., `jasontheween`).
+5. **View:** Watch real-time sentiment scores appear in your terminal.
+6. **Stop:** Press `Ctrl+C` to exit.
+
+## 🛣️ Roadmap
+* [x] **Async Scraper:** Built high-throughput chat ingestion pipeline.
+
+* [x] **Domain Adaptation (WIP):** Implemented MLM training to learn Twitch slang.
+
+* [ ] **Fine-Tuning:** Train the final Classification Head on labeled sentiment data.
+
+* [ ] **Dashboard:** Build a Streamlit frontend to visualize sentiment trends live.
+
+* [ ] **Adapters:** Experiment with LoRA adapters for channel-specific slang and contexts.
+
+## License
+This project is open-source and available under the MIT License.

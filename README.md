@@ -60,9 +60,10 @@ Moved inference to local GPU (RTX 4050), using CUDA-accelerated PyTorch and FP16
 ## Challenges & Trade-offs
 
 ### Constraint: Data Scarcity
-Labeling 100k+ messages manually is unrealistic for a solo engineer.
+<br>Labeling 100k+ messages manually is unrealistic for a solo engineer.
+
 **Solution:**
-Use **Domain Adaptation** first. By doing MLM pre-training on *unlabeled* data, the model's confusion reduced significantly on raw messages. This allows the model to require significantly fewer labeled samples for final classification.
+<br>Use **Domain Adaptation** first. By doing MLM pre-training on *unlabeled* data, the model's confusion reduced significantly on raw messages. This allows the model to require significantly fewer labeled samples for final classification.
 ---
 
 ## 🛠️ Tech Stack

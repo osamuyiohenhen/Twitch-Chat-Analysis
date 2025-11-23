@@ -24,14 +24,16 @@ Designed for environments with **high velocity** (bursts of 50+ msgs/s) and **no
 It uses a hybrid architecture: training on cloud GPUs and conducting inference locally for fast performance.
 
 ### 1. Asynchronous Data Ingestion
-**Challenge:** Twitch chat is extremely bursty --- A hype moment can spike traffic from 5 &rarr; 100 messages/second instantly, causing many scrapers to freeze or drop packets.
-**Solution:** An `asyncio` + `twitchAPI` ingestion pipeline to handle the WebSocket connection. This prevents blocking and ensures stability even when message volume surges.
+**Challenge:**<br>
+Twitch chat is extremely bursty --- A hype moment can spike traffic from 5 &rarr; 100 messages/second instantly, causing many scrapers to freeze or drop packets.
+**Solution:**<br>
+An `asyncio` + `twitchAPI` ingestion pipeline to handle the WebSocket connection. This prevents blocking and ensures stability even when message volume surges.
 ---
 
 ### 2. Training on Cloud, Inference on Local GPU
-**Challenge:**
+**Challenge:**<br>
 Heavy MLM training stresses local laptop GPUs, while cloud inference adds unacceptable latency (~500ms+ round-trip) and session timeouts.
-**Solution:**
+**Solution:**<br>
 I implemented a hybrid architecture:
 * **Cloud (Colab T4 GPU):** Handles the compute-heavy MLM pretraining using its higher VRAM and more stable throughput.
 * **Local GPU (RTX 4050):** Hosts the real-time inference engine, avoiding network delays and enabling sub-60ms message processing.
@@ -40,27 +42,28 @@ This approach gives efficient training without sacrificing the real-time perform
 ---
 
 ### 3. Custom Language Modeling (MLM)
-**Challenge:**
+**Challenge:**<br>
 Standard pre-trained models misinterpret Twitch slang.
 Example: *"He is cracked"* &rarr; Negative (broken) instead of Positive (skilled).
-**Solution:**
+**Solution:**<br>
 Implemented **Self-Supervised Domain Adaptation** with **Masked Language Modeling (MLM)** on ~50k unlabeled Twitch messages.
 This teaches the model the underlying “dialect” before any supervised fine-tuning.
-**Result:** Achieved a **~75% reduction in MLM training loss**, with perplexity dropping from ~21k → ~8-9 (so far), a strong indicator that the model now understands Twitch slang far better than the baseline.
+**Result:**<br>
+Achieved a **~75% reduction in MLM training loss**, with perplexity dropping from ~21k → ~8-9 (so far), a strong indicator that the model now understands Twitch slang far better than the baseline.
 ---
 
 ### 4. Local Hardware Acceleration
-**Challenge:**
+**Challenge:**<br>
 Cloud inference introduces ~500ms round-trip latency and runtime limits --- far too slow for real-time chat.
-**Solution:**
+**Solution:**<br>
 Moved inference to local GPU (RTX 4050), using CUDA-accelerated PyTorch and FP16 mixed precision. Achieves **<60ms end-to-end latency** per message, enabling real-time moderation and sentiment reading.
 ---
 
 ## Challenges & Trade-offs
 
-### Constraint: Data Scarcity
+### Constraint: Data Scarcity<br>
 Labeling 100k+ messages manually is unrealistic for a solo engineer.
-**Solution:**
+**Solution:**<br>
 Use **Domain Adaptation** first. By doing MLM pre-training on *unlabeled* data, the model's confusion reduced significantly on raw messages. This allows the model to require significantly fewer labeled samples for final classification.
 ---
 

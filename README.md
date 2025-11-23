@@ -11,36 +11,57 @@
 ## 📖 About The Project
 This project extends a standard sentiment analysis tool into a real-time analytics engine capable of handling the chaotic environment of Twitch.tv chat.
 
-It started with a simple goal: **"Can I determine the overall sentiment of a live broadcast?"**
-However, standard tools failed in two key areas: they were too slow for live chat, and they didn't understand gaming slang. I engineered this pipeline to combat those specific constraints while constantly innovating to deliver accurate, real-time sentiment tracking.
-
+It started with a simple goal: **"Can a model understand the emotional flow of a live Twitch stream?"**
+However, standard models failed because:
+1. They were too slow for live chat.
+2. They didn't understand gaming slang.
+This pipeline was engineered specifically to solve those constraints while moving toward accurate, real-time moderation and sentiment tracking.
 ---
 
 ## ⚙️ System Architecture
 
-I designed this pipeline to handle the specific constraints of live streaming data: **high velocity** (bursts of 50+ msgs/s) and **noisy syntax**.
+Designed for environments with **high velocity** (bursts of 50+ msgs/s) and **noisy syntax**.
+It uses a hybrid architecture: training on cloud GPUs and conducting inference locally for fast performance.
 
 ### 1. Asynchronous Data Ingestion
-* **The Challenge:** Twitch chat is "bursty." A hype moment can spike traffic from 5 to 100 messages/second instantly, causing standard scrapers to freeze or drop packets.
-* **The Solution:** The asynchronous pipeline uses `asyncio` and `twitchAPI` to handle the WebSocket connection. This decouples the data fetching from the processing, ensuring the bot never "freezes" even when chat moves too fast to read.
+**Challenge:** Twitch chat is extremely bursty --- A hype moment can spike traffic from 5 &rarr; 100 messages/second instantly, causing many scrapers to freeze or drop packets.
+**Solution:** An `asyncio` + `twitchAPI` ingestion pipeline to handle the WebSocket connection. This prevents blocking and ensures stability even when message volume surges.
+---
 
-### 2. Custom Language Modeling (MLM)
-* **The Challenge:** Standard pre-trained models (like `twitter-roberta`) misinterpret gaming slang. For example, they classify "He is cracked" as *Negative* (Broken) instead of *Positive* (Skilled).
-* **The Solution:** I implemented a **Self-Supervised Domain Adaptation** stage. By pre-training the model on ~300k unlabeled Twitch messages using **Masked Language Modeling (MLM)**, the model learned the vocabulary of Twitch (e.g., "poggers", "cap", "throw") before being fine-tuned for sentiment.
-* **The Result:** Achieved a **~75% reduction in model perplexity** (so far) compared to the baseline, enabling the model to correctly contextualize slang where standard models fail.
+### 2. Training on Cloud, Inference on Local GPU
+**Challenge:**
+Heavy MLM training stresses local laptop GPUs, while cloud inference adds unacceptable latency (~500ms+ round-trip) and session timeouts.
+**Solution:**
+I implemented a hybrid architecture:
+* **Cloud (Colab T4 GPU):** Handles the compute-heavy MLM pretraining using its higher VRAM and more stable throughput.
+* **Local GPU (RTX 4050):** Hosts the real-time inference engine, avoiding network delays and enabling sub-60ms message processing.
 
-### 3. Local Hardware Acceleration
-* **The Challenge:** Cloud APIs introduce ~500ms network latency (way too slow for an active live chat) and cost money per query.
-* **The Solution:** I optimized the inference speed for local NVIDIA GPUs using PyTorch/CUDA and FP16 Mixed Precision. It achieves **<60ms latency** per message on consumer hardware (RTX 4050), allowing for true real-time analysis.
+This approach gives efficient training without sacrificing the real-time performance required for Twitch chat.
+---
 
+### 3. Custom Language Modeling (MLM)
+**Challenge:**
+Standard pre-trained models misinterpret Twitch slang.
+Example: *"He is cracked"* &rarr; Negative (broken) instead of Positive (skilled).
+**Solution:**
+Implemented **Self-Supervised Domain Adaptation** with **Masked Language Modeling (MLM)** on ~50k unlabeled Twitch messages.
+This teaches the model the underlying “dialect” before any supervised fine-tuning.
+**Result:** Achieved a **~75% reduction in MLM training loss**, with perplexity dropping from ~21k → ~8-9 (so far), a strong indicator that the model now understands Twitch slang far better than the baseline.
+---
+
+### 4. Local Hardware Acceleration
+**Challenge:**
+Cloud inference introduces ~500ms round-trip latency and runtime limits --- far too slow for real-time chat.
+**Solution:**
+Moved inference to local GPU (RTX 4050), using CUDA-accelerated PyTorch and FP16 mixed precision. Achieves **<60ms end-to-end latency** per message, enabling real-time moderation and sentiment reading.
 ---
 
 ## Challenges & Trade-offs
 
 ### Constraint: Data Scarcity
-As nice as it would be to use only data annotation for it to understand the environment, label 100k+ messages is nigh-impossible for a solo engineer.
-* **Solution:** **Domain Adaptation**. By pre-training on *unlabeled* data first, I reduced the model's confusion significantly on raw messages. By allowing it to familiarize itself with the Twitch language and phrases, this allows the model to require significantly fewer labeled samples to learn the final classification task.
-
+Labeling 100k+ messages manually is unrealistic for a solo engineer.
+**Solution:**
+Use **Domain Adaptation** first. By doing MLM pre-training on *unlabeled* data, the model's confusion reduced significantly on raw messages. This allows the model to require significantly fewer labeled samples for final classification.
 ---
 
 ## 🛠️ Tech Stack
@@ -49,7 +70,6 @@ As nice as it would be to use only data annotation for it to understand the envi
 * **ML Framework:** PyTorch, Hugging Face Transformers
 * **Data & Async:** `asyncio`, `aiofiles`, `aiocsv`
 * **API:** `twitchAPI` (OAuth2 Authentication)
-
 ---
 
 ## 💻 Getting Started
@@ -71,7 +91,7 @@ source .venv/bin/activate
 ```
 
 ### 3. Install Dependencies
-Note: If you have an NVIDIA GPU, install the CUDA version of PyTorch first to enable hardware acceleration.
+Note: If you have an NVIDIA GPU, install the CUDA version of PyTorch first.
 ```bash
 pip install -r requirements.txt
 ```
@@ -84,30 +104,28 @@ You need to register an app on the Twitch Developer Console to get a Client ID a
 # config.py
 client_id = 'YOUR_TWITCH_CLIENT_ID'
 client_secret = 'YOUR_TWITCH_CLIENT_SECRET'
-# Add any other necessary configurations
 ```
-**⚠️ IMPORTANT:**  Ensure `config.py` is added to your `.gitignore` file so you do not accidentally commit your credentials to GitHub.
+**⚠️ IMPORTANT:**  Ensure `config.py` is added to your `.gitignore`.
 
 ### How to Use
-1. Make sure your config.py is set up.
+1. Ensure your Twitch credentials are set in config.py.
 2. Run the main program:
 ```bash
 python main.py
 ```
-3. **First Run:** The script will open your browser to authenticate with Twitch.
-
-4. **Connect:** Enter the channel name you want to analyze (e.g., `jasontheween`).
-5. **View:** Watch real-time sentiment scores appear in your terminal.
-6. **Stop:** Press `Ctrl+C` to exit.
+3. Authenticate when prompted.
+4. Enter the channel name you want to analyze (e.g., `jasontheween`).
+5. Watch real-time sentiment output in the terminal.
+6. Press `Ctrl+C` to stop.
 
 ## 🛣️ Roadmap
-* [x] **Async Scraper:** Built high-throughput chat ingestion pipeline.
+* [x] **Async Scraper:** Built high-throughput chat ingestion.
 
 * [x] **Domain Adaptation (WIP):** Implemented MLM training to learn Twitch slang.
 
-* [ ] **Fine-Tuning:** Train the final Classification Head on labeled sentiment data.
+* [ ] **Fine-Tuning:** Train final sentiment classifier on labeled data.
 
-* [ ] **Dashboard:** Build a Streamlit frontend to visualize sentiment trends live.
+* [ ] **Dashboard:** Streamlit visualization to display live sentiment trends.
 
 * [ ] **Adapters:** Experiment with LoRA adapters for channel-specific slang and contexts.
 

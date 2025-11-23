@@ -27,8 +27,9 @@ It uses a hybrid architecture: training on cloud GPUs and conducting inference l
 **Challenge:**
 Twitch chat is extremely bursty---A hype moment can spike traffic from 5 &rarr; 100 messages/second instantly, causing many scrapers to freeze or drop packets.
 
-**Solution:**<br>
+**Solution:**
 An `asyncio` + `twitchAPI` ingestion pipeline to handle the WebSocket connection. This prevents blocking and ensures stability even when message volume surges.
+
 ---
 
 ### 2. Training on Cloud, Inference on Local GPU

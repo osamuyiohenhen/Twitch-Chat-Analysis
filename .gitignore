@@ -181,3 +181,6 @@ checkpoint-*/
 *.safetensors
 *.bin
 *.pt
+
+# Ignore model saving
+saved_model.py

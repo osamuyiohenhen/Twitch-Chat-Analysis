@@ -21,7 +21,7 @@ CLIENT_SECRET = config.client_secret
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
 # Make sure this points to your latest V2 folder!
-MODEL_DIR = "./twitch-roberta-v2" 
+MODEL_DIR = "./twitch-roberta-test" 
 
 print("Loading Model...")
 
@@ -81,7 +81,7 @@ async def on_message(msg: ChatMessage):
     
     end = time.perf_counter()
     latency_ms = (end - start) * 1000
-
+    await save_message([msg.user.name, msg.text])
     # --- 3. PRINT RESULTS ---
     print(f"\nUser ({msg.user.display_name}): {msg.text}")
     print(f"Input to AI: \"{masked_text}\" [{latency_ms:.2f} ms]")
@@ -101,7 +101,7 @@ async def on_message(msg: ChatMessage):
         print(f"  {i+1}. {clean_token} ({score:.3f}) {marker}")
 
 async def save_message(message):
-    async with aiofiles.open("twitch_chats.csv", mode='a', newline='', encoding='utf-8') as f:
+    async with aiofiles.open("twitch_data_300k.csv", mode='a', newline='', encoding='utf-8') as f:
         writer = AsyncWriter(f)
         await writer.writerow(message)
 

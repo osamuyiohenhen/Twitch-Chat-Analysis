@@ -32,6 +32,7 @@ An `asyncio` + `twitchAPI` ingestion pipeline to handle the WebSocket connection
 
 ### 2. Training on Cloud, Inference on Local GPU
 **Challenge:** Heavy MLM training stresses local laptop GPUs, while cloud inference adds unacceptable latency (~500ms+ round-trip) and session timeouts.
+
 **Solution:** I implemented a hybrid architecture:
 * **Cloud (Colab T4 GPU):** Handles the compute-heavy MLM pretraining using its higher VRAM and more stable throughput.
 * **Local GPU (RTX 4050):** Hosts the real-time inference engine, avoiding network delays and enabling sub-60ms message processing.
@@ -60,7 +61,7 @@ Moved inference to local GPU (RTX 4050), using CUDA-accelerated PyTorch and FP16
 ## Challenges & Trade-offs
 
 ### Constraint: Data Scarcity
-<br>Labeling 100k+ messages manually is unrealistic for a solo engineer.
+Labeling 100k+ messages manually is unrealistic for a solo engineer.
 
 **Solution:**
 <br>Use **Domain Adaptation** first. By doing MLM pre-training on *unlabeled* data, the model's confusion reduced significantly on raw messages. This allows the model to require significantly fewer labeled samples for final classification.

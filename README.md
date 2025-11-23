@@ -9,31 +9,37 @@
 ---
 
 ## 📖 About The Project
-This is a real-time NLP engine designed to read and analyze Twitch chat. Unlike standard sentiment analysis tools that are trained on Twitter or movie reviews, this project focuses on understanding **Twitch-specific context**.
+This project extends a standard sentiment analysis tool into a real-time analytics engine capable of handling the chaotic environment of Twitch.tv chat.
 
-Standard models often misinterpret gaming slang (e.g., classifying "He is cracked" as *Negative* because of the word "cracked"). This engine solves that by using **Domain Adaptation**—teaching the model the vocabulary of Twitch before asking it to judge sentiment.
+It started with a simple goal: **"Can I determine the overall sentiment of a live broadcast?"**
+However, standard tools failed in two key areas: they were too slow for live chat, and they didn't understand gaming slang. I engineered this pipeline to combat those specific constraints while constantly innovating to deliver accurate, real-time sentiment tracking.
 
-## ⚙️ How It Works (System Design)
+---
 
-I built this pipeline to solve two main problems: **Latency** and **Slang Comprehension**.
+## ⚙️ System Architecture
+
+I designed this pipeline to handle the specific constraints of live streaming data: **high velocity** (bursts of 50+ msgs/s) and **noisy syntax**.
 
 ### 1. Asynchronous Data Ingestion
-Twitch chat is "bursty." A hype moment can generate 50+ messages per second.
-* **The Solution:** The scraper uses `asyncio` and `twitchAPI` to handle the WebSocket connection. This decouples the data fetching from the processing, ensuring the bot never "freezes" even when chat moves too fast to read.
+* **The Challenge:** Twitch chat is "bursty." A hype moment can spike traffic from 5 to 100 messages/second instantly, causing standard scrapers to freeze or drop packets.
+* **The Solution:** The asynchronous pipeline uses `asyncio` and `twitchAPI` to handle the WebSocket connection. This decouples the data fetching from the processing, ensuring the bot never "freezes" even when chat moves too fast to read.
 
 ### 2. Custom Language Modeling (MLM)
-I moved away from generic models like GPT-4 or stock RoBERTa for a custom approach:
-* **The Architecture:** I use a **RoBERTa** (Encoder) model running locally.
-* **The Training:** I implemented a **Masked Language Modeling (MLM)** stage. By training the model on ~50k unlabeled Twitch messages, it learns to predict slang words (e.g., "That play was `<mask>`" -> "Poggers").
-* **The Result:** The model learns that "cracked," "goated," and "insane" are positive contextually, significantly reducing confusion compared to off-the-shelf models.
+* **The Challenge:** Standard pre-trained models (like `twitter-roberta`) misinterpret gaming slang. For example, they classify "He is cracked" as *Negative* (Broken) instead of *Positive* (Skilled).
+* **The Solution:** I implemented a **Self-Supervised Domain Adaptation** stage. By pre-training the model on ~300k unlabeled Twitch messages using **Masked Language Modeling (MLM)**, the model learned the vocabulary of Twitch (e.g., "poggers", "cap", "throw") before being fine-tuned for sentiment.
+* **The Result:** Achieved a **~75% reduction in model perplexity** (so far) compared to the baseline, enabling the model to correctly contextualize slang where standard models fail.
 
 ### 3. Local Hardware Acceleration
-* **Why Local?** Cloud APIs are slow and expensive. This runs entirely on-premise.
-* **Performance:** Optimized for NVIDIA GPUs using PyTorch/CUDA. It currently achieves **<50ms inference latency** per message on consumer hardware (RTX 4050).
+* **The Challenge:** Cloud APIs introduce ~500ms network latency (way too slow for an active live chat) and cost money per query.
+* **The Solution:** I optimized the inference speed for local NVIDIA GPUs using PyTorch/CUDA and FP16 Mixed Precision. It achieves **<60ms latency** per message on consumer hardware (RTX 4050), allowing for true real-time analysis.
+
+---
+
+## Challenges & Trade-offs
 
 ### Constraint: Data Scarcity
-Hand-labeling 100,000 messages for sentiment is impossible for a solo engineer.
-* **Solution:** **Domain Adaptation**. By pre-training on *unlabeled* data first, I reduced the model's **Perplexity** from ~134 to ~9. The model learned the "language" of Twitch unsupervised, meaning I only need to hand-label a tiny fraction (2k messages) for the final fine-tuning stage.
+As nice as it would be to use only data annotation for it to understand the environment, label 100k+ messages is nigh-impossible for a solo engineer.
+* **Solution:** **Domain Adaptation**. By pre-training on *unlabeled* data first, I reduced the model's confusion significantly on raw messages. By allowing it to familiarize itself with the Twitch language and phrases, this allows the model to require significantly fewer labeled samples to learn the final classification task.
 
 ---
 

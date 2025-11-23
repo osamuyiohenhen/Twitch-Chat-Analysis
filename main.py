@@ -26,7 +26,7 @@ USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 import torch
 
-MODEL_DIR = "./twitch-roberta-v1" # Point to your trained folder
+MODEL_DIR = "./twitch-roberta-test" # Point to your trained folder
 
 # 1. Load the Tokenizer (The Dictionary)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, local_files_only=True)
@@ -54,7 +54,7 @@ CLASSIFIER = pipeline(
     top_k=None # Return all scores so you can see the confusion
 )
 
-print("Model loaded successfully!")
+# print("Model loaded successfully!")
 
 # Various known Twitch chatbots that can be ignored
 BOT_LIST = {'fossabot', 'nightbot', 'streamelements', "potatbotat"} 
@@ -88,7 +88,7 @@ async def on_message(msg: ChatMessage):
     data_for_csv = [msg.user.name, msg.text] # , "", top_label, f"{top_score:.3f}"
     await save_message(data_for_csv)
 async def save_message(message):
-    async with aiofiles.open("twitch_chat.csv", mode='a', newline='', encoding='utf-8') as f:
+    async with aiofiles.open("twitch_chat_300k.csv", mode='a', newline='', encoding='utf-8') as f:
         writer = AsyncWriter(f)
         await writer.writerow(message)
 

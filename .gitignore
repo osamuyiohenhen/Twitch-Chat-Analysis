@@ -175,8 +175,8 @@ cython_debug/
 config.py
 
 # Ignore Model Checkpoints and Weights
-twitch-roberta-v1/
-twitch-roberta-v2/
+twitch-roberta-base/
+twitch-roberta-test/
 checkpoint-*/
 *.safetensors
 *.bin

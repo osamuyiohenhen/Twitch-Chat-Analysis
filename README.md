@@ -71,7 +71,7 @@ Moved inference to local GPU (RTX 4050), using CUDA-accelerated PyTorch and FP16
 Labeling 100k+ messages manually is unrealistic for a solo engineer.
 
 **Solution:**
-<br>Use **Domain Adaptation** first. By doing MLM pre-training on *unlabeled* data, the model's confusion reduced significantly on raw messages. This allows the model to require significantly fewer labeled samples for final classification.
+Use **Domain Adaptation** first. By doing MLM pre-training on *unlabeled* data, the model's confusion reduced significantly on raw messages. This allows the model to require significantly fewer labeled samples for final classification.
 
 ---
 

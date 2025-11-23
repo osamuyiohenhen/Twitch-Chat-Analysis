@@ -25,7 +25,7 @@ It uses a hybrid architecture: training on cloud GPUs and conducting inference l
 
 ### 1. Asynchronous Data Ingestion
 **Challenge:**
-Twitch chat is extremely bursty---A hype moment can spike traffic from 5 &rarr; 100 messages/second instantly, causing many scrapers to freeze or drop packets.
+Twitch chat is extremely bursty &mdash; A hype moment can spike traffic from 5 &rarr; 100 messages/second instantly, causing many scrapers to freeze or drop packets.
 
 **Solution:**
 An `asyncio` + `twitchAPI` ingestion pipeline to handle the WebSocket connection. This prevents blocking and ensures stability even when message volume surges.
@@ -53,6 +53,16 @@ This teaches the model the underlying “dialect” before any supervised fine-t
 
 **Result:** Achieved a **~75% reduction in MLM training loss**, with perplexity dropping from ~21k → ~8-9 (so far), a strong indicator that the model now understands Twitch slang far better than the baseline.
 
+### 3.5 Model Setup
+
+This project loads the model locally and does *not* auto-download it.
+Download the model from Hugging Face: [text](https://huggingface.co/muyihenhen/twitch-roberta-base)
+Then place the downloaded folder in the project root as:
+```bash
+./twitch-roberta-base/
+```
+That’s it &mdash; the pipeline will load it automatically.
+
 ---
 
 ### 4. Local Hardware Acceleration
@@ -66,7 +76,6 @@ Moved inference to local GPU (RTX 4050), using CUDA-accelerated PyTorch and FP16
 ---
 
 ## Challenges & Trade-offs
-
 ### Constraint: Data Scarcity
 Labeling 100k+ messages manually is unrealistic for a solo engineer.
 

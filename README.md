@@ -68,7 +68,7 @@ That’s it &mdash; the pipeline will load it automatically.
 ### 4. Local Hardware Acceleration
 
 **Challenge:**
-Cloud inference introduces ~500ms round-trip latency and runtime limits --- far too slow for real-time chat.
+Cloud inference introduces ~500ms round-trip latency and runtime limits &mdash; far too slow for real-time chat.
 
 **Solution:**
 Moved inference to local GPU (RTX 4050), using CUDA-accelerated PyTorch and FP16 mixed precision. Achieves **<60ms end-to-end latency** per message, enabling real-time moderation and sentiment reading.

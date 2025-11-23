@@ -110,7 +110,7 @@ pip install -r requirements.txt
 This project loads the model locally and does **not** auto-download it.
 
 Download the model from Hugging Face:
-[twitch-roberta-base — Hugging Face model](https://huggingface.co/muyihenhen/twitch-roberta-base)
+[huggingface.co/muyihenhen/twitch-roberta-base](https://huggingface.co/muyihenhen/twitch-roberta-base)
 
 Then place the downloaded folder in the project root as:
 ```bash

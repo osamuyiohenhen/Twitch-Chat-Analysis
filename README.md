@@ -42,7 +42,7 @@ This approach gives efficient training without sacrificing the real-time perform
 ---
 
 ### 3. Custom Language Modeling (MLM)
-**Challenge:**<br>
+**Challenge:** <br>
 Standard pre-trained models misinterpret Twitch slang.
 Example: *"He is cracked"* &rarr; Negative (broken) instead of Positive (skilled).
 **Solution:**<br>

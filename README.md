@@ -24,8 +24,9 @@ Designed for environments with **high velocity** (bursts of 50+ msgs/s) and **no
 It uses a hybrid architecture: training on cloud GPUs and conducting inference locally for fast performance.
 
 ### 1. Asynchronous Data Ingestion
-**Challenge:**<br>
-Twitch chat is extremely bursty --- A hype moment can spike traffic from 5 &rarr; 100 messages/second instantly, causing many scrapers to freeze or drop packets.
+**Challenge:**
+Twitch chat is extremely bursty---A hype moment can spike traffic from 5 &rarr; 100 messages/second instantly, causing many scrapers to freeze or drop packets.
+
 **Solution:**<br>
 An `asyncio` + `twitchAPI` ingestion pipeline to handle the WebSocket connection. This prevents blocking and ensures stability even when message volume surges.
 ---

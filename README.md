@@ -53,16 +53,6 @@ This teaches the model the underlying “dialect” before any supervised fine-t
 
 **Result:** Achieved a **~75% reduction in MLM training loss**, with perplexity dropping from ~21k → ~8-9 (so far), a strong indicator that the model now understands Twitch slang far better than the baseline.
 
-### 3.5 Model Setup
-
-This project loads the model locally and does *not* auto-download it.
-Download the model from Hugging Face: [text](https://huggingface.co/muyihenhen/twitch-roberta-base)
-Then place the downloaded folder in the project root as:
-```bash
-./twitch-roberta-base/
-```
-That’s it &mdash; the pipeline will load it automatically.
-
 ---
 
 ### 4. Local Hardware Acceleration
@@ -115,6 +105,18 @@ Note: If you have an NVIDIA GPU, install the CUDA version of PyTorch first.
 ```bash
 pip install -r requirements.txt
 ```
+
+### 3.5 Model Setup
+This project loads the model locally and does **not** auto-download it.
+
+Download the model from Hugging Face:
+[text](https://huggingface.co/muyihenhen/twitch-roberta-base)
+
+Then place the downloaded folder in the project root as:
+```bash
+./twitch-roberta-base/
+```
+That’s it &mdash; the pipeline will load it automatically.
 
 ### 4. Twitch API Keys & Config
 You need to register an app on the Twitch Developer Console to get a Client ID and Client Secret.

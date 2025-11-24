@@ -87,13 +87,12 @@ async def on_message(msg: ChatMessage):
     # print(f"Third sentiment: {bot_label}, Score: {bot_score:.3f}")
     
     # ----------------- Data Collection (for model training) ----------------- #
-    # Append message + metadata to a CSV for later training use.
     data_for_csv = [msg.user.name, msg.text]
-    await save_message(data_for_csv)
+    # await save_message(data_for_csv)
 
 async def save_message(message):
     # Append a single CSV row asynchronously (non-blocking file IO)
-    async with aiofiles.open("twitch_chat_300k.csv", mode='a', newline='', encoding='utf-8') as f:
+    async with aiofiles.open("twitch_data_1m.csv", mode='a', newline='', encoding='utf-8') as f:
         writer = AsyncWriter(f)
         await writer.writerow(message)
 

@@ -1,3 +1,6 @@
+# Prediction Testing Script for Twitch Chat Data
+# This was adapted from main.py to focus on masked word prediction only.
+# This was used to verify the model's performance in a new domain.
 # Imports
 from twitchAPI.chat import Chat, ChatMessage
 from twitchAPI.type import AuthScope, ChatEvent
@@ -21,7 +24,7 @@ CLIENT_SECRET = config.client_secret
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
 # Path to the fine-tuned model directory
-MODEL_DIR = "./twitch-roberta-test" 
+MODEL_DIR = "./twitch-roberta-base" 
 
 print("Loading Model...")
 
@@ -53,15 +56,23 @@ async def on_message(msg: ChatMessage):
         msg.text and (
             msg.text[0] == '!' or any(word[:4].lower() == 'http' for word in msg.text.split())
         )
-    ):
+    ):  
         return
-
     # Split message into words
     words = msg.text.split()
     
     # Skip empty messages
     if len(words) < 1:
         return
+    
+    # Optional: For very short messages, mask the last word
+    # elif len(words) < 4:
+    #     random_index = len(words) - 1
+    #     real_word = words[random_index]
+    #     masked_words = words.copy()
+    #     masked_words[random_index] = "<mask>"
+    #     masked_text = " ".join(masked_words)
+    # else:
 
     # Randomly mask a word in the message
     random_index = random.randint(0, len(words) - 1)
@@ -76,16 +87,13 @@ async def on_message(msg: ChatMessage):
     end = time.perf_counter()
     latency_ms = (end - start) * 1000
 
-    # Save the message to a CSV file
-    await save_message([msg.user.name, msg.text])
+    # Save the message to a CSV file (not in use currently)
+    # await save_message([msg.user.name, msg.text])
 
     # Print results
     print(f"\nUser ({msg.user.display_name}): {msg.text}")
     print(f"Input to AI: \"{masked_text}\" [{latency_ms:.2f} ms]")    
     print(f"AI Guesses:")
-    # Handle case where top_k=1 returns a dict, but top_k>1 returns a list
-    if isinstance(predictions, dict):
-        predictions = [predictions]
 
     for i, pred in enumerate(predictions):
         clean_token = pred['token_str'].replace('Ġ', '') 
@@ -97,7 +105,7 @@ async def on_message(msg: ChatMessage):
 
 async def save_message(message):
     # Append message data to a CSV file
-    async with aiofiles.open("twitch_data_300k.csv", mode='a', newline='', encoding='utf-8') as f:
+    async with aiofiles.open("twitch_data_1m.csv", mode='a', newline='', encoding='utf-8-sig') as f:
         writer = AsyncWriter(f)
         await writer.writerow(message)
 
@@ -124,7 +132,7 @@ async def main():
                 print(f"Leaving channel: {current_channel}...")
                 current_channel = None
 
-            target_channel = input("\nEnter the Twitch channel (or 'q'): ").lower()
+            target_channel = input("\nEnter the Twitch channel you wish to connect to (or type 'q' to exit): ").lower()
             if target_channel == 'q': break
             if not target_channel: continue
 

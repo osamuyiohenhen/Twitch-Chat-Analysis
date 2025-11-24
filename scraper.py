@@ -1,3 +1,6 @@
+# Twitch Chat Data Scraper
+# This script connects to various Twitch channels and collects chat messages,
+# saving them to a CSV for later use in model training.
 from twitchAPI.chat import Chat, ChatMessage
 from twitchAPI.type import AuthScope, ChatEvent
 from twitchAPI.oauth import UserAuthenticator
@@ -16,10 +19,10 @@ USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
 # Target channels for data collection
 TARGET_CHANNELS = [
-    'stableronaldo', 'fanum', 'lacy',
-    'jasontheween', 'valkyrae', 'plaqueboymax', 'fextralife', 'sodapoppin',
-    'timthetatman', 'ludwig', 'ninja', 'shroud', 'pokimane', 'xqcow',
-    'myth', 'drdisrespect', 'summit1g', 'sykkuno', 'yugi2x', 'fatboydip'
+    'stableronaldo', 'fanum', 'n3on', 'zoomaa', 'summit1g',
+    'jasontheween', 'valkyrae', 'plaqueboymax', 'yourrageming', 'arky',
+     'ludwig', 'shroud', 'xqc', 'summit1g', 'sykkuno', 'yugi2x', 'fatboydip',
+    '2xrakai', 'sakurashymko'
 ]
 
 OUTPUT_FILE = "twitch_data_300k.csv"
@@ -30,18 +33,22 @@ async def save_message(message_list):
         writer = AsyncWriter(f)
         await writer.writerow(message_list)
 
+
 # Handle incoming chat messages
 async def on_message(msg: ChatMessage):
-    # Filter out bot messages, commands, and links
-    if msg.user.display_name.lower() in BOT_LIST or (
-        msg.text and (
-            msg.text[0] == '!' or any(word[:4].lower() == 'http' for word in msg.text.split())
-        )
-    ):
+    text = msg.text or ""
+    user = msg.user.display_name.lower()
+    # Skip bots
+    if user in BOT_LIST:
+        return
+    # Skip commands (starting with !)
+    if text.startswith('!'):
+        return
+    # Skip links (http or https)
+    if "http" in text.lower():  # cheaper than per-word slicing
         return
 
     channel_name = msg.room.name
-    text = msg.text
 
     try:
         print(f"[{channel_name}] {text}")  # Log message to console

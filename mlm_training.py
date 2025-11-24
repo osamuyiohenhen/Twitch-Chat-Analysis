@@ -1,3 +1,6 @@
+# MLM Training Script for Twitch Chat Data
+# Note: This is the script used for training on my local machine.
+# These settings may need to be adjusted based on your hardware capabilities.
 import multiprocessing
 from transformers import (
     AutoModelForMaskedLM,
@@ -8,92 +11,84 @@ from transformers import (
 )
 from datasets import load_dataset
 
-# ==========================================
-# 1. CONFIGURATION
-# ==========================================
+# Section 1 - Configuration: model, data and training parameters
 model_name = "./twitch-roberta-v1"
-input_file = "twitch_chat.csv" 
+input_file = "twitch_chat.csv"
 output_dir = "./twitch-roberta-v2"
-block_size = 128 
+block_size = 128
 
-# ==========================================
-# 2. GLOBAL INITIALIZATION (THE FIX)
-# ==========================================
-# The tokenizer MUST be loaded here so worker processes can see it.
-print("Loading Tokenizer globally...")
+# Section 2 - Global initialization: load the tokenizer here so worker processes can access it
+print("Loading tokenizer globally...")
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-# ==========================================
-# 3. HELPER FUNCTIONS
-# ==========================================
+# Section 3 - Helper functions
 def tokenize_function(examples):
-    # Now this works because 'tokenizer' is global
+    # Tokenize texts using the globally loaded tokenizer
     return tokenizer(examples["text"])
 
 def group_texts(examples):
-    # Concatenate all texts in this batch
+    # Concatenate all token lists in the batch and split into fixed-size blocks
     concatenated_examples = {k: sum(examples[k], []) for k in examples.keys()}
     total_length = len(concatenated_examples[list(examples.keys())[0]])
-    
-    # Drop the small remainder at the end
+
+    # Drop the small remainder so every chunk is exactly block_size
     if total_length >= block_size:
         total_length = (total_length // block_size) * block_size
-        
-    # Split by chunks of block_size
+
+    # Create chunks of block_size for each feature
     result = {
         k: [t[i : i + block_size] for i in range(0, total_length, block_size)]
         for k, t in concatenated_examples.items()
     }
     return result
 
-# ==========================================
-# 4. MAIN EXECUTION
-# ==========================================
+# Section 4 - Main execution: load model inside main to save VRAM and run training
 if __name__ == "__main__":
-    # Load the Model ONLY inside main (to save VRAM)
     print(f"Loading model: {model_name}...")
     model = AutoModelForMaskedLM.from_pretrained(model_name)
 
     print("Loading CSV...")
-    # Ensure you have the header fixed or use column_names=["text"]
+    # If your CSV has no header, pass column_names=["text"]
     dataset = load_dataset("csv", data_files=input_file)
 
     print("Tokenizing data...")
     tokenized_datasets = dataset.map(
         tokenize_function,
         batched=True,
-        num_proc=4,             
-        remove_columns=["text"] 
+        num_proc=4,
+        remove_columns=["text"],  # remove raw text column after tokenization
     )
 
     print("Grouping texts into blocks...")
     lm_datasets = tokenized_datasets.map(
         group_texts,
         batched=True,
-        num_proc=4
+        num_proc=4,
     )
-    
+
     print(f"Original messages: {len(dataset['train'])}")
     print(f"Grouped blocks: {len(lm_datasets['train'])}")
 
+    # Data collator for masked language modeling
     data_collator = DataCollatorForLanguageModeling(
-        tokenizer=tokenizer, 
-        mlm_probability=0.15
+        tokenizer=tokenizer,
+        mlm_probability=0.15,
     )
 
+    # Training arguments
     training_args = TrainingArguments(
         output_dir=output_dir,
         overwrite_output_dir=True,
-        num_train_epochs=15,             
-        per_device_train_batch_size=4,  
-        gradient_accumulation_steps=4, 
+        num_train_epochs=15,
+        per_device_train_batch_size=4,
+        gradient_accumulation_steps=4,
         learning_rate=5e-5,
         save_total_limit=2,
         weight_decay=0.01,
-        fp16=True,                      
+        fp16=True,
         save_steps=500,
         logging_steps=50,
-        report_to="none"                
+        report_to="none",
     )
 
     trainer = Trainer(
@@ -103,10 +98,10 @@ if __name__ == "__main__":
         data_collator=data_collator,
     )
 
-    print("Starting training... (Fans will spin up now)")
+    print("Starting training...")
     trainer.train()
 
-    print("Saving model...")
+    print("Saving model and tokenizer...")
     trainer.save_model(output_dir)
     tokenizer.save_pretrained(output_dir)
     print(f"DONE! Model saved to {output_dir}")

@@ -126,6 +126,7 @@ You need to register an app on the Twitch Developer Console to get a Client ID a
 # config.py
 client_id = 'YOUR_TWITCH_CLIENT_ID'
 client_secret = 'YOUR_TWITCH_CLIENT_SECRET'
+# Optional: I chose to add a bot_list for other chatbots
 ```
 **⚠️ IMPORTANT:**  Ensure `config.py` is added to your `.gitignore`.
 

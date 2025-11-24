@@ -1,0 +1,8 @@
+twitchAPI
+aiofiles
+aiocsv
+transformers
+datasets
+accelerate
+torch
+huggingface-hub

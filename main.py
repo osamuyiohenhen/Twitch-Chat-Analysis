@@ -4,64 +4,101 @@ from twitchAPI.type import AuthScope, ChatEvent
 from twitchAPI.oauth import UserAuthenticator
 from twitchAPI.twitch import Twitch
 import asyncio
-# import time (diagnostic purposes)
-import sys
+import time
 import os
 
-# # Data Extraction (this is for model training purposes. You can ignore this.)
-# from aiocsv import AsyncWriter
-# import aiofiles
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+import torch
 
-from transformers import pipeline
+# Data extraction utilities (used for collecting training data)
+from aiocsv import AsyncWriter
+import aiofiles
 
-# Contains APP_ID & APP_SECRET // Testing asking for channel input on creation
+# Contains client_id, client_secret, and BOT_LIST
 import config
 
-# Set up Constants (imported in private config.py file)
+# Constants
 CLIENT_ID = config.client_id
 CLIENT_SECRET = config.client_secret
-# Defines what the program is authorized to do. Since this is a basic program, it can simply read and write chat messages.
+BOT_LIST = config.bot_list
+
+# OAuth scopes required by the application
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
-# Current model for sentiment analysis (working on fine-tuning it in the future)
-CLASSIFIER = pipeline(model="cardiffnlp/twitter-roberta-base-sentiment-latest", top_k=None)
+# Path to a locally saved model directory.
+# NOTE: This repository does NOT auto-download the model.
+# First-time users must download the model from Hugging Face manually
+# and place it in this folder before running the program.
+MODEL_DIR = "./twitch-roberta-base"
 
-# Various known Twitch chatbots that can be ignored
-BOT_LIST = {'fossabot', 'nightbot', 'streamelements', "potatbotat"} 
+# Load tokenizer from local model directory
+tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, local_files_only=True)
 
+# Load sequence classification model (3 labels: Negative, Neutral, Positive)
+# Note: specifying num_labels ensures the classification head has the expected output size.
+model = AutoModelForSequenceClassification.from_pretrained(
+    MODEL_DIR, 
+    local_files_only=True,
+    num_labels=3, 
+    problem_type="multi_label_classification"  # optional: clarifies objective type
+)
+
+# Device selection for the pipeline (0 = first CUDA device, -1 = CPU)
+device = 0 if torch.cuda.is_available() else -1
+
+# Create a Hugging Face pipeline for text classification with explicit model/tokenizer
+# top_k=None returns scores for all labels rather than only the top result.
+CLASSIFIER = pipeline(
+    "text-classification", 
+    model=model, 
+    tokenizer=tokenizer, 
+    device=device, 
+    top_k=None
+)
+
+# Asynchronous chat message handler
 async def on_message(msg: ChatMessage):
-    if msg.user.display_name.lower() in BOT_LIST:
-        print(f"--- Ignoring bot message from: {msg.user.display_name} ---")
+    # Filter out bot messages, commands, and links
+    if msg.user.display_name.lower() in BOT_LIST or (
+        msg.text and (
+            msg.text[0] == '!' or any(word[:4].lower() == 'http' for word in msg.text.split())
+        )
+    ):
         return
-    elif msg.text[0] == '!':
-        print(f"---Ignoring Command from: {msg.user.display_name}")
-        return
-    
-    print(f"{msg.user.display_name}: {msg.text}")
-#------------------Chat Sentiment-----------------#
-    sentiment = CLASSIFIER(msg.text)
-    # Print the main sentiment analysis
-    top_label, top_score = sentiment[0][0]['label'], sentiment[0][0]['score']
-    print(f"Main sentiment: {top_label}, Score: {top_score:.3f}")
 
-    # Optional: Print the second most likely sentiment
+    # Print the incoming chat message
+    print(f"{msg.user.display_name}: {msg.text}")
+
+    # ------------------ Sentiment Inference ------------------ #
+    # Measure end-to-end inference latency around the classification call.
+    start = time.perf_counter()
+    sentiment = CLASSIFIER(msg.text)
+    end = time.perf_counter()
+    latency_ms = (end - start) * 1000
+
+    # Print primary sentiment and score
+    top_label, top_score = sentiment[0][0]['label'], sentiment[0][0]['score']
+    print(f"Main sentiment: {top_label}, Score: {top_score:.3f} [{latency_ms:.2f} ms]")
+
+    # Optional: print additional label scores for inspection
     # mid_label, mid_score = sentiment[0][1]['label'], sentiment[0][1]['score']
     # print(f"Second sentiment: {mid_label}, Score: {mid_score:.3f}")
-    # Optional: Print the third most likely sentiment
     # bot_label, bot_score = sentiment[0][2]['label'], sentiment[0][2]['score']
     # print(f"Third sentiment: {bot_label}, Score: {bot_score:.3f}")
     
-# #-----------------Data Extraction-----------------# This is for model training purposes. You can ignore this.
-#     data_for_csv = [msg.user.name, msg.text]
-# #     await save_message(data_for_csv)
-# async def save_message(message):
-#     async with aiofiles.open("twitch_data.csv", mode='a', newline='', encoding='utf-8') as f:
-#         writer = AsyncWriter(f)
-#         await writer.writerow(message)
+    # ----------------- Data Collection (for model training) ----------------- #
+    data_for_csv = [msg.user.name, msg.text]
+    # await save_message(data_for_csv)
 
-# Main function
+async def save_message(message):
+    # Append a single CSV row asynchronously (non-blocking file IO)
+    async with aiofiles.open("twitch_data_1m.csv", mode='a', newline='', encoding='utf-8') as f:
+        writer = AsyncWriter(f)
+        await writer.writerow(message)
+
+# Main application entrypoint
 async def main():
-    # Authenticate (one time)
+    # Authenticate the application / user
     print("Authenticating...")
     twitch = await Twitch(CLIENT_ID, CLIENT_SECRET)
     auth = UserAuthenticator(twitch, USER_SCOPE)
@@ -69,10 +106,10 @@ async def main():
     await twitch.set_user_authentication(token, USER_SCOPE, refresh_token) 
     print("Authentication successful.")
 
-    # Initialize Chat class instance
+    # Initialize chat client
     chat = await Chat(twitch)
 
-    # Since this program will just be detecting messages for now, the only event that needs to be registered/detected is when a message is sent.
+    # Register message event handler
     chat.register_event(ChatEvent.MESSAGE, on_message)
         
     print("Initializing connection...")
@@ -83,7 +120,7 @@ async def main():
     current_channel = None
     try:
         while True:
-            # Skips this if current_channel is not set (first time run)
+            # If already in a channel, leave it before joining a new one
             if current_channel:
                 await chat.leave_room(current_channel)
                 await asyncio.sleep(0.3)
@@ -93,47 +130,39 @@ async def main():
             target_channel = input("\nEnter the Twitch channel you wish to connect to (or type 'q' to exit): ").lower()
             if target_channel == 'q':
                 break
-            
             if not target_channel:
                 print("Channel name cannot be empty. Please try again.")
                 continue
 
             try:
                 print(f"\nJoining channel: {target_channel}...")
-                # start_time = time.perf_counter() (diagnostic purposes)
-                # After attempting to join, wait few seconds for joining channel
+                # Attempt to join the chat room with a short timeout to fail fast on invalid channels
                 await asyncio.wait_for(chat.join_room(target_channel), timeout=1.5)
-                # end_time = time.perf_counter()
-                # total_time = end_time - start_time
-                # print(f"Time took for channel join attempt: {total_time:.2f} seconds.")
 
-                # By here, it should be successful
+                # Successfully joined; block here until user presses ENTER to switch or quit
                 current_channel = target_channel
                 await asyncio.to_thread(input, 'Press "ENTER" to switch channels or quit.\n\n')
 
             except asyncio.TimeoutError:
-                # Runs if the join_confirmation was not set within the specified timeout frame
+                # Timeout likely means the channel doesn't exist or the bot is banned
                 print(f"\n[ERROR] Could not join channel '{target_channel}'.")
                 print("The channel may not exist or you may be banned.")
     
     finally:
+        # Graceful shutdown sequence
         print("\nStopping chat connection...")
-        # Stop chat client
         chat.stop()
         print("Closing Twitch...")
-        # Initialize program closing coroutine (can be possibly finnicky, so mind that)
         await twitch.close()
-
         print("\nProgram Status: Off")
 
 if __name__ == '__main__':
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        # the program can occasionally get stuck when trying to exit the API connection. Since this would be the end of the program,
-        # it should generally be okay to use the terminating function, os._exit(), however use with caution for your use case.
+        # Allow Ctrl+C to exit cleanly; force-exit as a last resort.
         print("\nProgram manually stopped.")
         os._exit(0)
     finally:
-        # Exit program entirely
-        os._exit(0) 
+        # Ensure process terminates
+        os._exit(0)

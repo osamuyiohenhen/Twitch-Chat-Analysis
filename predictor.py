@@ -48,8 +48,13 @@ print("Model loaded successfully!")
 BOT_LIST = {'fossabot', 'nightbot', 'streamelements', "potatbotat"} 
 
 async def on_message(msg: ChatMessage):
-    # Skip bot messages if needed
-    # if msg.user.display_name.lower() in BOT_LIST: return
+    # Filter out bot messages, commands, and links
+    if msg.user.display_name.lower() in BOT_LIST or (
+        msg.text and (
+            msg.text[0] == '!' or any(word[:4].lower() == 'http' for word in msg.text.split())
+        )
+    ):
+        return
 
     # Split message into words
     words = msg.text.split()

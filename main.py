@@ -58,11 +58,13 @@ CLASSIFIER = pipeline(
 
 # Asynchronous chat message handler
 async def on_message(msg: ChatMessage):
-    # Uncomment filters below to ignore bot messages or commands
-    # if msg.user.display_name.lower() in BOT_LIST:
-    #     return
-    # elif msg.text and msg.text[0] == '!':
-    #     return
+    # Filter out bot messages, commands, and links
+    if msg.user.display_name.lower() in BOT_LIST or (
+        msg.text and (
+            msg.text[0] == '!' or any(word[:4].lower() == 'http' for word in msg.text.split())
+        )
+    ):
+        return
 
     # Print the incoming chat message
     print(f"{msg.user.display_name}: {msg.text}")

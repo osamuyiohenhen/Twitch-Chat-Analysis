@@ -1,4 +1,4 @@
-# Real-Time Twitch.tv Chat Analytics Engine
+# Real-Time Twitch.tv Chat Analytics Engine (WIP)
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue) ![PyTorch](https://img.shields.io/badge/PyTorch-GPU%20Accelerated-orange) ![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Transformers-yellow)
 

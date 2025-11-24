@@ -48,7 +48,7 @@ This approach gives efficient training without sacrificing the real-time perform
 **Challenge:** Standard pre-trained models misinterpret Twitch slang.
 Example: *"He is cracked"* &rarr; Negative (broken) instead of Positive (skilled).
 
-**Solution:** Implemented **Self-Supervised Domain Adaptation** with **Masked Language Modeling (MLM)** on ~50k unlabeled Twitch messages.
+**Solution:** Implemented **Self-Supervised Domain Adaptation** with **Masked Language Modeling (MLM)** on ~300k unlabeled Twitch messages.
 This teaches the model the underlying “dialect” before any supervised fine-tuning.
 
 **Result:** Achieved a **~75% reduction in MLM training loss**, with perplexity dropping from ~21k → ~8-9 (so far), a strong indicator that the model now understands Twitch slang far better than the baseline.

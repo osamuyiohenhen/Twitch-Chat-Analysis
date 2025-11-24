@@ -6,7 +6,7 @@ from twitchAPI.twitch import Twitch
 import asyncio
 import time
 import os
-import random  # <--- Added for random selection
+import random  # For random selection of words to mask
 import aiofiles
 from aiocsv import AsyncWriter
 import torch
@@ -20,21 +20,21 @@ CLIENT_ID = config.client_id
 CLIENT_SECRET = config.client_secret
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
-# Make sure this points to your latest V2 folder!
+# Path to the fine-tuned model directory
 MODEL_DIR = "./twitch-roberta-test" 
 
 print("Loading Model...")
 
-# 1. Load Tokenizer
+# Load Tokenizer
 tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, local_files_only=True)
 
-# 2. Load the MASKED LM Model
+# Load the Masked Language Model
 model = AutoModelForMaskedLM.from_pretrained(MODEL_DIR, local_files_only=True)
 
-# 3. Hardware Check
+# Check for GPU availability
 device = 0 if torch.cuda.is_available() else -1
 
-# 4. The Pipeline 
+# Initialize the prediction pipeline
 PREDICTOR = pipeline(
     "fill-mask", 
     model=model, 
@@ -48,45 +48,35 @@ print("Model loaded successfully!")
 BOT_LIST = {'fossabot', 'nightbot', 'streamelements', "potatbotat"} 
 
 async def on_message(msg: ChatMessage):
-    # Filter bots if you want
+    # Skip bot messages if needed
     # if msg.user.display_name.lower() in BOT_LIST: return
 
-    # --- 1. PREPARE THE TEST ---
+    # Split message into words
     words = msg.text.split()
     
-    # If message is empty, skip
+    # Skip empty messages
     if len(words) < 1:
         return
 
-    # --- NEW LOGIC: RANDOM MASKING ---
-    # Pick a random index from the message
+    # Randomly mask a word in the message
     random_index = random.randint(0, len(words) - 1)
-    
-    # Save the actual word so we can compare (optional, for your own debugging)
     real_word = words[random_index]
-    
-    # Create a copy of the list so we don't mess up the original variable if needed later
     masked_words = words.copy()
-    
-    # Replace the random word with the mask token
     masked_words[random_index] = "<mask>"
-    
-    # Rejoin the list into a string
     masked_text = " ".join(masked_words)
 
-    # --- 2. RUN INFERENCE ---
+    # Run inference
     start = time.perf_counter()
-    
     predictions = PREDICTOR(masked_text)
-    
     end = time.perf_counter()
     latency_ms = (end - start) * 1000
+
+    # Save the message to a CSV file
     await save_message([msg.user.name, msg.text])
-    # --- 3. PRINT RESULTS ---
+
+    # Print results
     print(f"\nUser ({msg.user.display_name}): {msg.text}")
-    print(f"Input to AI: \"{masked_text}\" [{latency_ms:.2f} ms]")
-    # print(f"Hidden Word: {real_word}") # Uncomment if you want to see explicitly what was hidden
-    
+    print(f"Input to AI: \"{masked_text}\" [{latency_ms:.2f} ms]")    
     print(f"AI Guesses:")
     # Handle case where top_k=1 returns a dict, but top_k>1 returns a list
     if isinstance(predictions, dict):
@@ -101,11 +91,12 @@ async def on_message(msg: ChatMessage):
         print(f"  {i+1}. {clean_token} ({score:.3f}) {marker}")
 
 async def save_message(message):
+    # Append message data to a CSV file
     async with aiofiles.open("twitch_data_300k.csv", mode='a', newline='', encoding='utf-8') as f:
         writer = AsyncWriter(f)
         await writer.writerow(message)
 
-# Main function
+# Main function to handle Twitch authentication and chat interaction
 async def main():
     print("Authenticating...")
     twitch = await Twitch(CLIENT_ID, CLIENT_SECRET)

@@ -8,54 +8,49 @@ import aiofiles
 from aiocsv import AsyncWriter
 import config
 
-# ==========================================
-# CONFIGURATION
-# ==========================================
+# Configuration
 CLIENT_ID = config.client_id
 CLIENT_SECRET = config.client_secret
+BOT_LIST = config.bot_list
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
-# The "Big List" to get diverse slang
+# Target channels for data collection
 TARGET_CHANNELS = [
-    'marlon', 'cinna', 'stableronaldo', 
-    'kaicenat', 'jasontheween', 'yourragegaming',
-    'yugi2x', 'arky', 'plaqueboymax'
+    'stableronaldo', 'fanum', 'lacy',
+    'jasontheween', 'valkyrae', 'plaqueboymax', 'fextralife', 'sodapoppin',
+    'timthetatman', 'ludwig', 'ninja', 'shroud', 'pokimane', 'xqcow',
+    'myth', 'drdisrespect', 'summit1g', 'sykkuno', 'yugi2x', 'fatboydip'
 ]
 
 OUTPUT_FILE = "twitch_data_300k.csv"
 
-# ==========================================
-# CSV HANDLING
-# ==========================================
+# Save messages to CSV
 async def save_message(message_list):
-    # Appends to CSV. Format is now just: [Channel, Message]
     async with aiofiles.open(OUTPUT_FILE, mode='a', newline='', encoding='utf-8') as f:
         writer = AsyncWriter(f)
         await writer.writerow(message_list)
 
-# ==========================================
-# CHAT LOGIC
-# ==========================================
+# Handle incoming chat messages
 async def on_message(msg: ChatMessage):
-    # Filter bots (Optional - add more if you see spam)
-    if msg.user.display_name.lower() in ['nightbot', 'streamelements', 'fossabot']: 
+    # Filter out bot messages, commands, and links
+    if msg.user.display_name.lower() in BOT_LIST or (
+        msg.text and (
+            msg.text[0] == '!' or any(word[:4].lower() == 'http' for word in msg.text.split())
+        )
+    ):
         return
 
     channel_name = msg.room.name
     text = msg.text
 
-    # 1. PRINT IT (So you know it's working)
     try:
-        print(f"[{channel_name}] {text}")
+        print(f"[{channel_name}] {text}")  # Log message to console
     except Exception:
-        pass # Ignore emoji printing errors in Windows terminal
+        pass  # Ignore emoji-related errors
 
-    # 2. SAVE IT (Channel + Text only)
-    await save_message([channel_name, text])
+    await save_message([channel_name, text])  # Save message to CSV
 
-# ==========================================
-# MAIN EXECUTION
-# ==========================================
+# Main execution
 async def main():
     print("Authenticating...")
     twitch = await Twitch(CLIENT_ID, CLIENT_SECRET)
@@ -64,13 +59,13 @@ async def main():
     await twitch.set_user_authentication(token, USER_SCOPE, refresh_token)
     print("Authentication successful.")
 
-    # Initialize Chat
+    # Initialize and start chat
     chat = await Chat(twitch)
     chat.register_event(ChatEvent.MESSAGE, on_message)
     chat.start()
     print(f"Connecting to {len(TARGET_CHANNELS)} channels...")
 
-    # Join all channels
+    # Join target channels
     try:
         await chat.join_room(TARGET_CHANNELS)
         print(f"Successfully joined: {', '.join(TARGET_CHANNELS)}")
@@ -79,7 +74,7 @@ async def main():
     except Exception as e:
         print(f"Error joining channels: {e}")
 
-    # Keep running until user stops
+    # Keep running until interrupted
     try:
         await asyncio.Event().wait()
     except KeyboardInterrupt:

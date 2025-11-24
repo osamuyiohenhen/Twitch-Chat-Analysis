@@ -120,13 +120,17 @@ That’s it &mdash; the pipeline will load it automatically.
 
 ### 4. Twitch API Keys & Config
 You need to register an app on the Twitch Developer Console to get a Client ID and Client Secret.
-1. Create a file named `config.py` in the root folder.
+1. Go to the file named `config_example.py`.
 2. Add your credentials as shown below:
 ```bash
-# config.py
-client_id = 'YOUR_TWITCH_CLIENT_ID'
-client_secret = 'YOUR_TWITCH_CLIENT_SECRET'
-# Optional: I chose to add a bot_list for other chatbots
+# config_example.py
+# rename this file to: config.py
+# Enter your Twitch Developer credentials below
+# Get them from: https://dev.twitch.tv/console
+
+client_id = 'YOUR_TWITCH_CLIENT_ID_HERE'
+client_secret = 'YOUR_TWITCH_CLIENT_SECRET_HERE'
+# Optional: I chose to add a bot_list for other chatbots to ignore
 ```
 **⚠️ IMPORTANT:**  Ensure `config.py` is added to your `.gitignore`.
 

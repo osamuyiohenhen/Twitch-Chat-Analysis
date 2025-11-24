@@ -4,3 +4,4 @@
 
 client_id = 'YOUR_TWITCH_CLIENT_ID_HERE'
 client_secret = 'YOUR_TWITCH_CLIENT_SECRET_HERE'
+# Optional: I chose to add a bot_list for other chatbots to ignore

@@ -4,7 +4,7 @@
 
 ### Demo
 ![Demo of Twitch Chat Analyzer](demo.gif)
-*A preview of the engine connecting to live channels and processing messages in real-time.*
+*Preview of the engine connecting to live channels and processing messages in real-time (working on new demo).*
 
 ---
 

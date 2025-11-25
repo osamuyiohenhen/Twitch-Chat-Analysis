@@ -8,7 +8,7 @@
 
 ---
 
-## 📖 About The Project
+## About The Project
 This project extends a standard sentiment analysis tool into a real-time analytics engine capable of handling the chaotic environment of Twitch.tv chat.
 
 It started with a simple goal: **"Can a model understand the emotional flow of a live Twitch stream?"**
@@ -74,7 +74,7 @@ Use **Domain Adaptation** first. By doing MLM pre-training on *unlabeled* data, 
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 * **Language:** Python 3
 * **ML Framework:** PyTorch, Hugging Face Transformers
@@ -82,7 +82,7 @@ Use **Domain Adaptation** first. By doing MLM pre-training on *unlabeled* data, 
 * **API:** `twitchAPI` (OAuth2 Authentication)
 ---
 
-## 💻 Getting Started
+## Getting Started
 
 ### 1. Clone the Repo
 ```bash
@@ -120,12 +120,17 @@ That’s it &mdash; the pipeline will load it automatically.
 
 ### 4. Twitch API Keys & Config
 You need to register an app on the Twitch Developer Console to get a Client ID and Client Secret.
-1. Create a file named `config.py` in the root folder.
+1. Go to the file named `config_example.py`.
 2. Add your credentials as shown below:
 ```bash
-# config.py
-client_id = 'YOUR_TWITCH_CLIENT_ID'
-client_secret = 'YOUR_TWITCH_CLIENT_SECRET'
+# config_example.py
+# rename this file to: config.py
+# Enter your Twitch Developer credentials below
+# Get them from: https://dev.twitch.tv/console
+
+client_id = 'YOUR_TWITCH_CLIENT_ID_HERE'
+client_secret = 'YOUR_TWITCH_CLIENT_SECRET_HERE'
+# Optional: I chose to add a bot_list for other chatbots to ignore
 ```
 **⚠️ IMPORTANT:**  Ensure `config.py` is added to your `.gitignore`.
 
@@ -140,7 +145,7 @@ python main.py
 5. Watch real-time sentiment output in the terminal.
 6. Press `Ctrl+C` to stop.
 
-## 🛣️ Roadmap
+## Roadmap
 * [x] **Async Scraper:** Built high-throughput chat ingestion.
 
 * [x] **Domain Adaptation (WIP):** Implemented MLM training to learn Twitch slang.

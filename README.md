@@ -8,7 +8,7 @@
 
 ---
 
-## 📖 About The Project
+## About The Project
 This project extends a standard sentiment analysis tool into a real-time analytics engine capable of handling the chaotic environment of Twitch.tv chat.
 
 It started with a simple goal: **"Can a model understand the emotional flow of a live Twitch stream?"**
@@ -74,7 +74,7 @@ Use **Domain Adaptation** first. By doing MLM pre-training on *unlabeled* data, 
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 * **Language:** Python 3
 * **ML Framework:** PyTorch, Hugging Face Transformers
@@ -82,7 +82,7 @@ Use **Domain Adaptation** first. By doing MLM pre-training on *unlabeled* data, 
 * **API:** `twitchAPI` (OAuth2 Authentication)
 ---
 
-## 💻 Getting Started
+## Getting Started
 
 ### 1. Clone the Repo
 ```bash
@@ -145,7 +145,7 @@ python main.py
 5. Watch real-time sentiment output in the terminal.
 6. Press `Ctrl+C` to stop.
 
-## 🛣️ Roadmap
+## Roadmap
 * [x] **Async Scraper:** Built high-throughput chat ingestion.
 
 * [x] **Domain Adaptation (WIP):** Implemented MLM training to learn Twitch slang.

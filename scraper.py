@@ -19,17 +19,17 @@ USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
 # Target channels for data collection
 TARGET_CHANNELS = [
-    'stableronaldo', 'fanum', 'n3on', 'zoomaa', 'summit1g',
-    'jasontheween', 'valkyrae', 'plaqueboymax', 'yourrageming', 'arky',
-     'ludwig', 'shroud', 'xqc', 'summit1g', 'sykkuno', 'yugi2x', 'fatboydip',
+    'stableronaldo', 'fanum', 'hasanabi', 'yourragegaming', 'summit1g',
+    'jasontheween', 'silky', 'plaqueboymax', 'jynxzi', 'arky',
+     'ludwig', 'shroud', 'xqc', 'summit1g', 'theburntpeanut', 'yugi2x', 'RDCgaming',
     '2xrakai', 'sakurashymko'
 ]
 
-OUTPUT_FILE = "twitch_data_300k.csv"
+output_file = "twitch_data_1m.csv"
 
 # Save messages to CSV
 async def save_message(message_list):
-    async with aiofiles.open(OUTPUT_FILE, mode='a', newline='', encoding='utf-8') as f:
+    async with aiofiles.open(output_file, mode='a', newline='', encoding='utf-8') as f:
         writer = AsyncWriter(f)
         await writer.writerow(message_list)
 
@@ -76,7 +76,7 @@ async def main():
     try:
         await chat.join_room(TARGET_CHANNELS)
         print(f"Successfully joined: {', '.join(TARGET_CHANNELS)}")
-        print(f"Scraping data to {OUTPUT_FILE}...")
+        print(f"Scraping data to {output_file}...")
         print("Press Ctrl+C to stop.")
     except Exception as e:
         print(f"Error joining channels: {e}")

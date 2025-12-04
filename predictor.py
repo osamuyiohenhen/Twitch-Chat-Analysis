@@ -52,12 +52,15 @@ BOT_LIST = {'fossabot', 'nightbot', 'streamelements', "potatbotat"}
 
 async def on_message(msg: ChatMessage):
     # Filter out bot messages, commands, and links
-    if msg.user.display_name.lower() in BOT_LIST or (
-        msg.text and (
-            msg.text[0] == '!' or any(word[:4].lower() == 'http' for word in msg.text.split())
-        )
-    ):  
+    if msg.user in BOT_LIST:
         return
+    # Skip commands (starting with !)
+    if msg.text.startswith('!'):
+        return
+    # Skip links (http or https)
+    if "http" in msg.text.lower():  # cheaper than per-word slicing
+        return
+
     # Split message into words
     words = msg.text.split()
     
@@ -77,6 +80,8 @@ async def on_message(msg: ChatMessage):
     # Randomly mask a word in the message
     random_index = random.randint(0, len(words) - 1)
     real_word = words[random_index]
+    if real_word.startswith('@') and len(real_word) > 1:
+        return  # Skip masking @user mentions
     masked_words = words.copy()
     masked_words[random_index] = "<mask>"
     masked_text = " ".join(masked_words)
@@ -101,7 +106,7 @@ async def on_message(msg: ChatMessage):
         
         # Quick visual check: Add a star if it guessed the right word
         marker = "★" if clean_token.strip().lower() == real_word.lower() else ""
-        print(f"  {i+1}. {clean_token} ({score:.3f}) {marker}")
+        print(f"  {i+1}. {clean_token.strip()} ({score:.3f}) {marker}")
 
 async def save_message(message):
     # Append message data to a CSV file

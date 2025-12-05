@@ -40,7 +40,9 @@ device = 0 if torch.cuda.is_available() else -1
 # Initialize the prediction pipeline
 PREDICTOR = pipeline(
     "fill-mask", 
-    model=model, 
+    model=model,
+    # Use half-precision if on GPU for efficiency
+    dtype=torch.float16 if device == 0 else torch.float32, 
     tokenizer=tokenizer, 
     device=device,
     top_k=3 

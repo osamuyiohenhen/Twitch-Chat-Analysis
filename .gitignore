@@ -361,6 +361,8 @@ config.py
 # Ignore model saving
 save_model.py
 
+# Ignore model loading
+load_model.py
 # Ignore Model Checkpoints and Weights
 twitch-roberta-base/
 twitch-roberta-test/

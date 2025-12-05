@@ -41,7 +41,8 @@ device = 0 if torch.cuda.is_available() else -1
 PREDICTOR = pipeline(
     "fill-mask", 
     model=model, 
-    tokenizer=tokenizer, 
+    tokenizer=tokenizer,
+    dtype=torch.float16,
     device=device,
     top_k=3 
 )
@@ -60,12 +61,14 @@ async def on_message(msg: ChatMessage):
     # Skip links (http or https)
     if "http" in msg.text.lower():  # cheaper than per-word slicing
         return
+    
+    state["messageCount"] += 1
 
     # Split message into words
     words = msg.text.split()
     
     # Skip empty messages
-    if len(words) < 1:
+    if len(words) < 2:
         return
     
     # Optional: For very short messages, mask the last word
@@ -100,12 +103,19 @@ async def on_message(msg: ChatMessage):
     print(f"Input to AI: \"{masked_text}\" [{latency_ms:.2f} ms]")    
     print(f"AI Guesses:")
 
+    guessed_word = False
     for i, pred in enumerate(predictions):
-        clean_token = pred['token_str'].replace('Ġ', '') 
+        clean_token = pred['token_str'].replace('Ġ', '').strip()
         score = pred['score']
-        
         # Quick visual check: Add a star if it guessed the right word
-        marker = "★" if clean_token.strip().lower() == real_word.lower() else ""
+        if clean_token.lower() == real_word.lower():
+            marker = "★"
+            if not guessed_word:
+                state["correctWordCount"] += 1
+
+            guessed_word = True
+        else:
+            marker = ""
         print(f"  {i+1}. {clean_token.strip()} ({score:.3f}) {marker}")
 
 async def save_message(message):
@@ -113,6 +123,11 @@ async def save_message(message):
     async with aiofiles.open("twitch_data_1m.csv", mode='a', newline='', encoding='utf-8-sig') as f:
         writer = AsyncWriter(f)
         await writer.writerow(message)
+
+state = {
+    "messageCount": 0,
+    "correctWordCount": 0
+}
 
 # Main function to handle Twitch authentication and chat interaction
 async def main():
@@ -137,12 +152,19 @@ async def main():
                 print(f"Leaving channel: {current_channel}...")
                 current_channel = None
 
+                print("Message Count in last channel:", state["messageCount"])
+                print("Correct Word Count in last channel:", state["correctWordCount"])
+                print("Accuracy: {:.2f}%".format((state["correctWordCount"] / state["messageCount"] * 100) if state["messageCount"] > 0 else 0.0))
+
             target_channel = input("\nEnter the Twitch channel you wish to connect to (or type 'q' to exit): ").lower()
             if target_channel == 'q': break
             if not target_channel: continue
 
             try:
                 print(f"\nJoining channel: {target_channel}...")
+
+                state["messageCount"] = 0
+                state["correctWordCount"] = 0
                 await asyncio.wait_for(chat.join_room(target_channel), timeout=1.5)
                 current_channel = target_channel
                 await asyncio.to_thread(input, 'Press "ENTER" to switch channels.\n')

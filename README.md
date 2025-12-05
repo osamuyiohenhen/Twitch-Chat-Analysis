@@ -151,5 +151,7 @@ python main.py
 
 * [ ] **Adapters:** Experiment with LoRA adapters for channel-specific slang and contexts.
 
-## License
-This project is open-source and available under the MIT License.
+## Acknowledgements & License
+This project uses the [Twitter-roBERTa-base](https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest) model by CardiffNLP as the foundation for domain adaptation.
+* **Original Model License:** [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+* **Modifications:** The model was further pre-trained on Twitch chat data using Masked Language Modeling.

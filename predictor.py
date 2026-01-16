@@ -49,7 +49,7 @@ PREDICTOR = pipeline(
 
 print("Model loaded successfully!")
 
-BOT_LIST = {'fossabot', 'nightbot', 'streamelements', "potatbotat"} 
+BOT_LIST = config.bot_list
 
 async def on_message(msg: ChatMessage):
     # Filter out bot messages, commands, and links
@@ -67,8 +67,8 @@ async def on_message(msg: ChatMessage):
     # Split message into words
     words = msg.text.split()
     
-    # Skip empty messages
-    if len(words) < 2:
+    # Skip empty/short messages
+    if len(words) < 4:
         return
     
     # Optional: For very short messages, mask the last word
@@ -165,6 +165,7 @@ async def main():
 
                 state["messageCount"] = 0
                 state["correctWordCount"] = 0
+                
                 await asyncio.wait_for(chat.join_room(target_channel), timeout=1.5)
                 current_channel = target_channel
                 await asyncio.to_thread(input, 'Press "ENTER" to switch channels.\n')

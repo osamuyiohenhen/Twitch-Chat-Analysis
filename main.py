@@ -29,18 +29,16 @@ USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 # NOTE: This repository does NOT auto-download the model.
 # First-time users must download the model from Hugging Face manually
 # and place it in this folder before running the program.
-MODEL_DIR = "./twitch-roberta-base"
+MODEL_DIR = "cardiffnlp/twitter-roberta-base-sentiment-latest"
 
 # Load tokenizer from local model directory
-tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, local_files_only=True)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
 
 # Load sequence classification model (3 labels: Negative, Neutral, Positive)
 # Note: specifying num_labels ensures the classification head has the expected output size.
 model = AutoModelForSequenceClassification.from_pretrained(
-    MODEL_DIR, 
-    local_files_only=True,
-    num_labels=3, 
-    problem_type="multi_label_classification"  # optional: clarifies objective type
+    MODEL_DIR,
+    num_labels=3
 )
 
 # Device selection for the pipeline (0 = first CUDA device, -1 = CPU)
@@ -49,12 +47,15 @@ device = 0 if torch.cuda.is_available() else -1
 # Create a Hugging Face pipeline for text classification with explicit model/tokenizer
 # top_k=None returns scores for all labels rather than only the top result.
 CLASSIFIER = pipeline(
-    "text-classification", 
+    "sentiment-analysis", 
     model=model, 
     tokenizer=tokenizer, 
     device=device, 
     top_k=None
 )
+
+raw_queue = asyncio.Queue()  # Holds raw text
+results_queue = asyncio.Queue() # Holds finished predictions
 
 # Asynchronous chat message handler
 async def on_message(msg: ChatMessage):
@@ -68,33 +69,69 @@ async def on_message(msg: ChatMessage):
     if "http" in msg.text.lower():  # cheaper than per-word slicing
         return
 
+    raw_queue.put_nowait((msg.room.name, msg.text))
     # Print the incoming chat message
-    print(f"{msg.user.display_name}: {msg.text}")
+    # print(f"{msg.user.display_name}: {msg.text}")
 
-    # ------------------ Sentiment Inference ------------------ #
-    # Measure end-to-end inference latency around the classification call.
+import functools
+
+# This runs the synchronous model in a separate thread so it doesn't freeze the bot
+async def run_blocking_model(text):
+    loop = asyncio.get_running_loop()
+    
     start = time.perf_counter()
-    sentiment = CLASSIFIER(msg.text)
+    # Use functools.partial because run_in_executor doesn't accept kwargs directly
+    # 'None' uses the default ThreadPoolExecutor
+    result = await loop.run_in_executor(None, functools.partial(CLASSIFIER, text))
     end = time.perf_counter()
     latency_ms = (end - start) * 1000
-
     # Print primary sentiment and score
-    top_label, top_score = sentiment[0][0]['label'], sentiment[0][0]['score']
-    print(f"Main sentiment: {top_label}, Score: {top_score:.3f} [{latency_ms:.2f} ms]")
+    top_label, top_score = result[0][0]['label'], result[0][0]['score']
+    return top_label, top_score, latency_ms
+
+# 2. THE WORKER (Consumer)
+async def worker_logic():
+    print("Worker started...")
+    while True:
+        # Wait for a message (Non-blocking)
+        channel, text = await raw_queue.get()
+        
+        try:
+            label, score, latency_ms = await run_blocking_model(text)
+            sentiment = (label, score, latency_ms)
+            # Now save to CSV or whatever you need
+            # print(f"[{channel}] Processed: {sentiment}")
+            
+        except Exception as e:
+            print(f"Error: {e}")
+            sentiment = ("ERROR", 0.0, 0.0)
+
+        results_queue.put_nowait((channel, text, sentiment))
+        raw_queue.task_done()
+
+        # start = time.perf_counter()
+        # sentiment = CLASSIFIER(msg.text)
+        # end = time.perf_counter()
+        # latency_ms = (end - start) * 1000
 
     # Optional: print additional label scores for inspection
     # mid_label, mid_score = sentiment[0][1]['label'], sentiment[0][1]['score']
     # print(f"Second sentiment: {mid_label}, Score: {mid_score:.3f}")
     # bot_label, bot_score = sentiment[0][2]['label'], sentiment[0][2]['score']
     # print(f"Third sentiment: {bot_label}, Score: {bot_score:.3f}")
-    
-    # ----------------- Data Collection (for model training) ----------------- #
-    data_for_csv = [msg.user.name, msg.text]
-    # await save_message(data_for_csv)
+
+async def writer_worker():
+    while True:
+        channel, text, sentiment = await results_queue.get() # Wait for work
+        label, score, latency_ms = sentiment
+        print(f"{channel}: {text}")
+        print(f"   {label.upper()}, Score: {score:.3f} [{latency_ms:.2f} ms]")
+        await save_message((channel, text, sentiment))
+        results_queue.task_done()
 
 async def save_message(message):
     # Append a single CSV row asynchronously (non-blocking file IO)
-    async with aiofiles.open("twitch_data_1m.csv", mode='a', newline='', encoding='utf-8') as f:
+    async with aiofiles.open("twitch_chat_labelings.csv", mode='a', newline='', encoding='utf-8') as f:
         writer = AsyncWriter(f)
         await writer.writerow(message)
 
@@ -120,16 +157,29 @@ async def main():
     print("Connection started.")
 
     current_channel = None
+
+    asyncio.create_task(worker_logic())
+    asyncio.create_task(writer_worker())
     try:
         while True:
             # If already in a channel, leave it before joining a new one
             if current_channel:
                 await chat.leave_room(current_channel)
-                await asyncio.sleep(0.3)
+                # await asyncio.sleep(0.3)
                 print(f"Leaving channel: {current_channel}...")
                 current_channel = None
 
-            target_channel = input("\nEnter the Twitch channel you wish to connect to (or type 'q' to exit): ").lower()
+            # wait until processing queues are empty before prompting
+            while not raw_queue.empty() or not results_queue.empty():
+                await asyncio.sleep(0.2)
+
+            loop = asyncio.get_running_loop()
+            target_channel = await loop.run_in_executor(
+                None,
+                lambda: input("\nEnter the Twitch channel you wish to connect to (or type 'q' to exit): ")
+            )
+            target_channel = target_channel.lower()
+
             if target_channel == 'q':
                 break
             if not target_channel:
@@ -142,8 +192,7 @@ async def main():
                 await asyncio.wait_for(chat.join_room(target_channel), timeout=1.5)
 
                 # Successfully joined; block here until user presses ENTER to switch or quit
-                current_channel = target_channel
-                await asyncio.to_thread(input, 'Press "ENTER" to switch channels or quit.\n\n')
+                current_channel = target_channel      
 
             except asyncio.TimeoutError:
                 # Timeout likely means the channel doesn't exist or the bot is banned

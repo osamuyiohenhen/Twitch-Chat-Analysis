@@ -31,7 +31,7 @@ USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 # First-time users must download the model from Hugging Face manually
 # and place it in this folder before running the program.
 # CHANGE THIS to your actual HF username
-HF_REPO = "muyihenhen/twitch-sentiment-v1"
+HF_REPO = "muyihenhen/twitch-roberta-sentiment-v1"
 LOCAL_DIR = "models/twitch-sentiment-v2"
 
 # Logic: Use local if it exists (faster), else use Cloud (CI/Colab)

@@ -1,11 +1,12 @@
 # Imports
-from twitchAPI.chat import Chat, EventData, ChatMessage
+from twitchAPI.chat import Chat, ChatMessage
 from twitchAPI.type import AuthScope, ChatEvent
 from twitchAPI.oauth import UserAuthenticator
 from twitchAPI.twitch import Twitch
 import asyncio
 import time
 import os
+import functools
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 import torch
@@ -70,12 +71,8 @@ async def on_message(msg: ChatMessage):
     # Print the incoming chat message
     # print(f"{msg.user.display_name}: {msg.text}")
 
-import functools
-
 # This runs the synchronous model in a separate thread so it doesn't freeze the bot
 async def run_blocking_model(text):
-    loop = asyncio.get_running_loop()
-    
     start = time.perf_counter()
     # Use functools.partial because asyncio.to_thread only accepts a callable and its arguments
 

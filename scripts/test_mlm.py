@@ -24,15 +24,15 @@ CLIENT_SECRET = config.client_secret
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
 # Path to the fine-tuned model directory
-MODEL_DIR = "./twitch-roberta-base"
+MODEL_DIR = "muyihenhen/twitch-roberta-base"
 
 print("Loading Model...")
 
 # Load Tokenizer
-tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, local_files_only=True)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
 
 # Load the Masked Language Model
-model = AutoModelForMaskedLM.from_pretrained(MODEL_DIR, local_files_only=True)
+model = AutoModelForMaskedLM.from_pretrained(MODEL_DIR)
 
 # Check for GPU availability
 device = 0 if torch.cuda.is_available() else -1

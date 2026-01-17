@@ -101,7 +101,7 @@ async def on_message(msg: ChatMessage):
     # Print results
     print(f"\nUser ({msg.user.display_name}): {msg.text}")
     print(f"Input to AI: \"{masked_text}\" [{latency_ms:.2f} ms]")    
-    print(f"AI Guesses:")
+    print("AI Guesses:")
 
     guessed_word = False
     for i, pred in enumerate(predictions):
@@ -157,8 +157,10 @@ async def main():
                 print("Accuracy: {:.2f}%".format((state["correctWordCount"] / state["messageCount"] * 100) if state["messageCount"] > 0 else 0.0))
 
             target_channel = input("\nEnter the Twitch channel you wish to connect to (or type 'q' to exit): ").lower()
-            if target_channel == 'q': break
-            if not target_channel: continue
+            if target_channel == 'q':
+                break
+            if not target_channel:
+                continue
 
             try:
                 print(f"\nJoining channel: {target_channel}...")

@@ -29,17 +29,14 @@ USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 # NOTE: This repository does NOT auto-download the model.
 # First-time users must download the model from Hugging Face manually
 # and place it in this folder before running the program.
-MODEL_DIR = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+MODEL_DIR = "models/twitch-sentiment-v2"
 
 # Load tokenizer from local model directory
 tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
 
 # Load sequence classification model (3 labels: Negative, Neutral, Positive)
 # Note: specifying num_labels ensures the classification head has the expected output size.
-model = AutoModelForSequenceClassification.from_pretrained(
-    MODEL_DIR,
-    num_labels=3
-)
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR, num_labels=3)
 
 # Device selection for the pipeline (0 = first CUDA device, -1 = CPU)
 device = 0 if torch.cuda.is_available() else -1
@@ -80,17 +77,17 @@ async def run_blocking_model(text):
     loop = asyncio.get_running_loop()
     
     start = time.perf_counter()
-    # Use functools.partial because run_in_executor doesn't accept kwargs directly
-    # 'None' uses the default ThreadPoolExecutor
-    result = await loop.run_in_executor(None, functools.partial(CLASSIFIER, text))
-    end = time.perf_counter()
+    # Use functools.partial because asyncio.to_thread only accepts a callable and its arguments
+
+    result = await asyncio.to_thread(functools.partial(CLASSIFIER, text))
+    end = time.perf_counter()   
     latency_ms = (end - start) * 1000
     # Print primary sentiment and score
     top_label, top_score = result[0][0]['label'], result[0][0]['score']
     return top_label, top_score, latency_ms
 
-# 2. THE WORKER (Consumer)
-async def worker_logic():
+# 2. The Worker (Consumer)
+async def model_worker():
     print("Worker started...")
     while True:
         # Wait for a message (Non-blocking)
@@ -109,11 +106,6 @@ async def worker_logic():
         results_queue.put_nowait((channel, text, sentiment))
         raw_queue.task_done()
 
-        # start = time.perf_counter()
-        # sentiment = CLASSIFIER(msg.text)
-        # end = time.perf_counter()
-        # latency_ms = (end - start) * 1000
-
     # Optional: print additional label scores for inspection
     # mid_label, mid_score = sentiment[0][1]['label'], sentiment[0][1]['score']
     # print(f"Second sentiment: {mid_label}, Score: {mid_score:.3f}")
@@ -130,13 +122,18 @@ async def writer_worker():
         results_queue.task_done()
 
 async def save_message(message):
-    # Append a single CSV row asynchronously (non-blocking file IO)
-    async with aiofiles.open("twitch_chat_labelings.csv", mode='a', newline='', encoding='utf-8') as f:
+    # Append a single CSV row asynchronously
+    async with aiofiles.open("twitch_chats.csv", mode='a', newline='', encoding='utf-8') as f:
         writer = AsyncWriter(f)
         await writer.writerow(message)
 
-# Main application entrypoint
+# Main application
 async def main():
+
+    # Start the worker and writer tasks
+    asyncio.create_task(model_worker())
+    asyncio.create_task(writer_worker())
+
     # Authenticate the application / user
     print("Authenticating...")
     twitch = await Twitch(CLIENT_ID, CLIENT_SECRET)
@@ -154,59 +151,45 @@ async def main():
     print("Initializing connection...")
     # Start the chat client
     chat.start()
+
     print("Connection started.")
 
-    current_channel = None
+    # Prompt user for target channel
+    while True:
+        target_channel = await asyncio.to_thread(input, "\nEnter a valid Twitch channel you wish to connect to (or 'q' to exit): ")
+        target_channel = target_channel.strip().lower()
+        
+        if target_channel == 'q':
+            print("\nProgram Status: Off")
+            return
+        elif not target_channel:
+            continue
+        else:
+            break
 
-    asyncio.create_task(worker_logic())
-    asyncio.create_task(writer_worker())
+    # Connect & Hold
     try:
-        while True:
-            # If already in a channel, leave it before joining a new one
-            if current_channel:
-                await chat.leave_room(current_channel)
-                # await asyncio.sleep(0.3)
-                print(f"Leaving channel: {current_channel}...")
-                current_channel = None
+        print(f"\nJoining channel: {target_channel}...")
+        
+        # Attempt to join
+        await asyncio.wait_for(chat.join_room(target_channel), timeout=1.5)
+        
+        print(f"Connected to {target_channel}. Press Ctrl+C to exit.\n")
 
-            # wait until processing queues are empty before prompting
-            while not raw_queue.empty() or not results_queue.empty():
-                await asyncio.sleep(0.2)
+    except asyncio.TimeoutError:
+        print(f"\n[ERROR] Could not join channel '{target_channel}'.")
+        print("The channel may not exist or you may be banned.")
 
-            loop = asyncio.get_running_loop()
-            target_channel = await loop.run_in_executor(
-                None,
-                lambda: input("\nEnter the Twitch channel you wish to connect to (or type 'q' to exit): ")
-            )
-            target_channel = target_channel.lower()
+    while True:
+        await asyncio.sleep(0.05) # Constantly sleep to allow for the live view of chats to update
 
-            if target_channel == 'q':
-                break
-            if not target_channel:
-                print("Channel name cannot be empty. Please try again.")
-                continue
-
-            try:
-                print(f"\nJoining channel: {target_channel}...")
-                # Attempt to join the chat room with a short timeout to fail fast on invalid channels
-                await asyncio.wait_for(chat.join_room(target_channel), timeout=1.5)
-
-                # Successfully joined; block here until user presses ENTER to switch or quit
-                current_channel = target_channel      
-
-            except asyncio.TimeoutError:
-                # Timeout likely means the channel doesn't exist or the bot is banned
-                print(f"\n[ERROR] Could not join channel '{target_channel}'.")
-                print("The channel may not exist or you may be banned.")
+    # finally:
+    #     print("\nStopping chat connection...")
+    #     chat.stop()
+    #     print("Closing Twitch...")
+    #     await twitch.close()
+    #     print("\nProgram Status: Off")
     
-    finally:
-        # Graceful shutdown sequence
-        print("\nStopping chat connection...")
-        chat.stop()
-        print("Closing Twitch...")
-        await twitch.close()
-        print("\nProgram Status: Off")
-
 if __name__ == '__main__':
     try:
         asyncio.run(main())
@@ -215,5 +198,4 @@ if __name__ == '__main__':
         print("\nProgram manually stopped.")
         os._exit(0)
     finally:
-        # Ensure process terminates
         os._exit(0)

@@ -2,7 +2,7 @@ name: CI for Twitch Chat Project
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "dev"]
   pull_request:
     branches: [ "main", "dev" ]
 
@@ -16,9 +16,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.10
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.10"
+          cache: 'pip'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -44,4 +45,4 @@ jobs:
 
       - name: Test Main Script
         run: |
-          timeout 10s python main.py || true
+          timeout 15s python main.py || true

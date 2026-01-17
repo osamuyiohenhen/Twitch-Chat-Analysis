@@ -1,6 +1,9 @@
 # Real-Time Twitch.tv Chat Analytics Engine
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue) ![PyTorch](https://img.shields.io/badge/PyTorch-GPU%20Accelerated-orange) ![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Transformers-yellow)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue) 
+![PyTorch](https://img.shields.io/badge/PyTorch-GPU%20Accelerated-orange) 
+![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Transformers-yellow)
+![License](https://img.shields.io/badge/License-Apache%202.0-green)
 
 ### Demo
 ![Demo of Twitch Chat Analyzer](demo.gif)
@@ -13,10 +16,10 @@ This project extends a standard sentiment analysis tool into a real-time analyti
 
 It started with a simple goal: **"Can a model understand the emotional flow of a live Twitch stream?"**
 However, standard models failed because:
-1. They were too slow for live chat.
-2. They didn't understand gaming slang.
+1. They were too slow for live chat (latency).
+2. They didn't understand gaming slang (e.g., "Pog", "throw", "cap"). 
+
 This pipeline was engineered specifically to solve those constraints while moving toward accurate, real-time moderation and sentiment tracking.
----
 
 ## ⚙️ System Architecture
 
@@ -32,55 +35,35 @@ An `asyncio` + `twitchAPI` ingestion pipeline to handle the WebSocket connection
 
 ---
 
-### 2. Training on Cloud, Inference on Local GPU
-**Challenge:** Heavy MLM training stresses local laptop GPUs, while cloud inference adds unacceptable latency (~500ms+ round-trip) and session timeouts.
+### 2. The Two-Stage Model Development
 
-**Solution:** I implemented a hybrid architecture:
-* **Cloud (Colab T4 GPU):** Handles the compute-heavy MLM pretraining using its higher VRAM and more stable throughput.
-* **Local GPU (RTX 4050):** Hosts the real-time inference engine, avoiding network delays and enabling sub-60ms message processing.
+**Stage 1: Domain Adaptation**
+* **Problem:** Standard models think "He is cracked" means "He is broken" (Negative). In gaming, it means "He is skilled" (Positive).
+* **Solution:** I trained a RoBERTa model on **1.1 million unlabeled Twitch messages** using **Masked Language Modeling (MLM)**. This "taught" the model the dialect of Twitch before it ever learned about sentiment.
+* **Result:** Perplexity dropped from ~21k &rarr; ~5.5.
 
-This approach gives efficient training without sacrificing the real-time performance required for Twitch chat.
-
----
-
-### 3. Custom Language Modeling (MLM)
-
-**Challenge:** Standard pre-trained models misinterpret Twitch slang.
-Example: *"He is cracked"* &rarr; Negative (broken) instead of Positive (skilled).
-
-**Solution:** Implemented **Self-Supervised Domain Adaptation** with **Masked Language Modeling (MLM)** on ~300k unlabeled Twitch messages.
-This teaches the model the underlying “dialect” before any supervised fine-tuning.
-
-**Result:** Achieved a **~78% reduction in MLM training loss**, with perplexity dropping from ~21k → ~8-9 (so far), a strong indicator that the model now understands Twitch slang far better than the baseline.
+**Stage 2: Sentiment Fine-Tuning**
+* **Problem:** Understanding slang isn't enough; we need to know if the chat is Happy, Angry, or Neutral.
+* **Solution:** Fine-tuned the domain-adapted model on a labeled dataset of chat logs.
+* **Result:** A classifier that correctly identifies nuances like sarcasm and hype that standard models miss.
 
 ---
 
-### 4. Local Hardware Acceleration
-
-**Challenge:**
-Cloud inference introduces ~500ms round-trip latency and runtime limits &mdash; far too slow for real-time chat.
-
+### 3. Hybrid Cloud/Local Architecture
+**Challenge:** Training is too heavy for a laptop, but cloud inference (API) is too slow for real-time chat.
 **Solution:**
-Moved inference to local GPU (RTX 4050), using CUDA-accelerated PyTorch and FP16 mixed precision. Achieves **<60ms end-to-end latency** per message, enabling real-time moderation and sentiment reading.
+* **Training (Cloud):** Heavy MLM pre-training and Fine-tuning runs on Google Colab (A100 GPU).
+* **Inference (Local):** The optimized model is deployed locally on an RTX 4050 using FP16 mixed precision.
+* **Performance:** Achieves **<60ms end-to-end latency** per message.
 
----
+## 🛠️ Tech Stack
 
-## Challenges & Trade-offs
-### Constraint: Data Scarcity
-Labeling 100k+ messages manually is unrealistic for a solo engineer.
-
-**Solution:**
-Use **Domain Adaptation** first. By doing MLM pre-training on *unlabeled* data, the model's confusion reduced significantly on raw messages. This allows the model to require significantly fewer labeled samples for final classification.
-
----
-
-## Tech Stack
-
-* **Language:** Python 3
+* **Language:** Python 3.10+
 * **ML Framework:** PyTorch, Hugging Face Transformers
 * **Data & Async:** `asyncio`, `aiofiles`, `aiocsv`
+* **DevOps & CI:** GitHub Actions, Ruff (Linting/Formatting)
 * **API:** `twitchAPI` (OAuth2 Authentication)
----
+
 
 ## Getting Started
 
@@ -101,62 +84,47 @@ source .venv/bin/activate
 ```
 
 ### 3. Install Dependencies
-Note: If you have an NVIDIA GPU, install the CUDA version of PyTorch first.
 ```bash
 pip install -r requirements.txt
 ```
-
-### 3.5 Model Setup
-This project loads the model locally and does **not** auto-download it.
-
-Download the model from Hugging Face:
-[huggingface.co/muyihenhen/twitch-roberta-base](https://huggingface.co/muyihenhen/twitch-roberta-base)
-
-Then place the downloaded folder in the project root as:
-```bash
-./twitch-roberta-base/
-```
-That’s it &mdash; the pipeline will load it automatically.
+*Note: If you have an NVIDIA GPU, install the CUDA version of PyTorch first.*
 
 ### 4. Twitch API Keys & Config
-You need to register an app on the Twitch Developer Console to get a Client ID and Client Secret.
-1. Go to the file named `config_example.py`.
-2. Add your credentials as shown below:
+
+You need a Client ID and Secret from the Twitch Developer Console.
+
+1. Create a file named `config.py` in the root folder.
+2. Add your credentials:
 ```bash
-# config_example.py
-# rename this file to: config.py
-# Enter your Twitch Developer credentials below
-# Get them from: https://dev.twitch.tv/console
-
-client_id = 'YOUR_TWITCH_CLIENT_ID_HERE'
-client_secret = 'YOUR_TWITCH_CLIENT_SECRET_HERE'
-# Optional: I chose to add a bot_list for other chatbots to ignore
+# config.py
+client_id = 'YOUR_TWITCH_CLIENT_ID'
+client_secret = 'YOUR_TWITCH_CLIENT_SECRET'
 ```
-**⚠️ IMPORTANT:**  Ensure `config.py` is added to your `.gitignore`.
 
-### How to Use
-1. Ensure your Twitch credentials are set in config.py.
-2. Run the main program:
+### 5. Run it
+The pipeline is designed to **automatically download** the latest model weights from Hugging Face if they aren't found locally.
 ```bash
 python main.py
 ```
-3. Authenticate when prompted.
-4. Enter the channel name you want to analyze (e.g., `jasontheween`).
-5. Watch real-time sentiment output in the terminal.
-6. Press `Ctrl+C` to stop.
+1. Authenticate when prompted.
+2. Enter the channel name you want to analyze (e.g., `shroud`).
+3. Watch the real-time sentiment classification in the terminal.
 
-## Roadmap
-* [x] **Async Scraper:** Built high-throughput chat ingestion.
+## 🛣️ Roadmap
+* [x] **Async Scraper:** Built high-throughput chat scraper.
 
 * [x] **Domain Adaptation (WIP):** Implemented MLM training to learn Twitch slang.
 
-* [ ] **Fine-Tuning:** Train final sentiment classifier on labeled data.
+* [x] **CI/CD Pipeline:** Automated testing and linting (Ruff) via GitHub Actions.
 
-* [ ] **Dashboard:** Streamlit visualization to display live sentiment trends.
+* [x] **Fine-Tuning:** Train final sentiment classifier on labeled data.
 
-* [ ] **Adapters:** Experiment with LoRA adapters for channel-specific slang and contexts.
+* [ ] **Dashboard:** Build a Streamlit UI to visualize live sentiment trends.
+
+* [ ] **Adapters:** Experiment with lightweight adapters for specific streamer communities.
 
 ## Acknowledgements & License
-This project uses the [Twitter-roBERTa-base](https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest) model by CardiffNLP as the foundation for domain adaptation.
-* **Original Model License:** [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)
-* **Modifications:** The model was further pre-trained on Twitch chat data using Masked Language Modeling.
+
+**License:** Apache 2.0.
+
+**Attribution:** This model is a fine-tuned version of [cardiffnlp/twitter-roberta-base-sentiment-latest](https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest).

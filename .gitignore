@@ -170,24 +170,24 @@ cython_debug/
 # Ruff stuff:
 .ruff_cache/
 
-# PyPI configuration file
-.pypirc
+# --- Project specific ignores ---
+
+# Client Secrets
 config.py
+.pypirc
 
-# Ignore model saving
-save_model.py
+# Data files
+data/
+*.csv
 
-# Ignore model loading
-load_model.py
-
-# Ignore Model Checkpoints and Weights
-twitch-roberta-base/
-twitch-roberta-test/
+# Model files
+models/
+results/
+logs/
 checkpoint-*/
+
+# Model weights
 *.safetensors
 *.bin
 *.pt
-
-# Ignore sentiment model training and raw/labeled messages
-labeling.py
-labeled_data.csv
+*.h5

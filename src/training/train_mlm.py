@@ -1,7 +1,6 @@
 # MLM Training Script for Twitch Chat Data
 # Note: This is the script used for training on my local machine.
 # These settings may need to be adjusted based on your hardware capabilities.
-import multiprocessing
 from transformers import (
     AutoModelForMaskedLM,
     AutoTokenizer,

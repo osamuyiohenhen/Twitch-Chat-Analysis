@@ -6,7 +6,6 @@ from twitchAPI.type import AuthScope, ChatEvent
 from twitchAPI.oauth import UserAuthenticator
 from twitchAPI.twitch import Twitch
 import asyncio
-import os
 import aiofiles
 from aiocsv import AsyncWriter
 import config

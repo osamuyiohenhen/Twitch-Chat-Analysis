@@ -4,7 +4,9 @@ import os
 
 api = HfApi(token=os.getenv("HF_TOKEN"))
 api.upload_folder(
-    folder_path="./twitch-roberta-base",
-    repo_id="muyihenhen/twitch-roberta-base",
+    folder_path="models/twitch-sentiment-v2",
+    repo_id="muyihenhen/twitch-roberta-sentiment-v1",
     repo_type="model",
 )
+
+print("Saved the model.")

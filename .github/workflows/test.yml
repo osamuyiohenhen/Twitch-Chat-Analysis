@@ -45,4 +45,4 @@ jobs:
 
       - name: Test Main Script
         run: |
-          timeout 10s python main.py || true
+          timeout 15s python main.py || true

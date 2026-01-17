@@ -30,14 +30,24 @@ USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 # NOTE: This repository does NOT auto-download the model.
 # First-time users must download the model from Hugging Face manually
 # and place it in this folder before running the program.
-MODEL_DIR = "models/twitch-sentiment-v2"
+# CHANGE THIS to your actual HF username
+HF_REPO = "muyihenhen/twitch-sentiment-v1"
+LOCAL_DIR = "models/twitch-sentiment-v2"
+
+# Logic: Use local if it exists (faster), else use Cloud (CI/Colab)
+if os.path.exists(LOCAL_DIR):
+    print(f"Loading from local folder: {LOCAL_DIR}")
+    MODEL_PATH = LOCAL_DIR
+else:
+    print(f"Local model not found. Finding on Hugging Face: {HF_REPO}")
+    MODEL_PATH = HF_REPO
 
 # Load tokenizer from local model directory
-tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
 
 # Load sequence classification model (3 labels: Negative, Neutral, Positive)
 # Note: specifying num_labels ensures the classification head has the expected output size.
-model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR, num_labels=3)
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH, num_labels=3)
 
 # Device selection for the pipeline (0 = first CUDA device, -1 = CPU)
 device = 0 if torch.cuda.is_available() else -1

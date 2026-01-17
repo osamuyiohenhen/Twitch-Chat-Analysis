@@ -45,15 +45,12 @@ device = 0 if torch.cuda.is_available() else -1
 # Create a Hugging Face pipeline for text classification with explicit model/tokenizer
 # top_k=None returns scores for all labels rather than only the top result.
 CLASSIFIER = pipeline(
-    "sentiment-analysis", 
-    model=model, 
-    tokenizer=tokenizer, 
-    device=device, 
-    top_k=None
+    "sentiment-analysis", model=model, tokenizer=tokenizer, device=device, top_k=None
 )
 
 raw_queue = asyncio.Queue()  # Holds raw text
-results_queue = asyncio.Queue() # Holds finished predictions
+results_queue = asyncio.Queue()  # Holds finished predictions
+
 
 # Asynchronous chat message handler
 async def on_message(msg: ChatMessage):
@@ -61,7 +58,7 @@ async def on_message(msg: ChatMessage):
     if msg.user in BOT_LIST:
         return
     # Skip commands (starting with !)
-    if msg.text.startswith('!'):
+    if msg.text.startswith("!"):
         return
     # Skip links (http or https)
     if "http" in msg.text.lower():  # cheaper than per-word slicing
@@ -71,17 +68,19 @@ async def on_message(msg: ChatMessage):
     # Print the incoming chat message
     # print(f"{msg.user.display_name}: {msg.text}")
 
+
 # This runs the synchronous model in a separate thread so it doesn't freeze the bot
 async def run_blocking_model(text):
     start = time.perf_counter()
     # Use functools.partial because asyncio.to_thread only accepts a callable and its arguments
 
     result = await asyncio.to_thread(functools.partial(CLASSIFIER, text))
-    end = time.perf_counter()   
+    end = time.perf_counter()
     latency_ms = (end - start) * 1000
     # Print primary sentiment and score
-    top_label, top_score = result[0][0]['label'], result[0][0]['score']
+    top_label, top_score = result[0][0]["label"], result[0][0]["score"]
     return top_label, top_score, latency_ms
+
 
 # 2. The Worker (Consumer)
 async def model_worker():
@@ -89,13 +88,13 @@ async def model_worker():
     while True:
         # Wait for a message (Non-blocking)
         channel, text = await raw_queue.get()
-        
+
         try:
             label, score, latency_ms = await run_blocking_model(text)
             sentiment = (label, score, latency_ms)
             # Now save to CSV or whatever you need
             # print(f"[{channel}] Processed: {sentiment}")
-            
+
         except Exception as e:
             print(f"Error: {e}")
             sentiment = ("ERROR", 0.0, 0.0)
@@ -109,24 +108,28 @@ async def model_worker():
     # bot_label, bot_score = sentiment[0][2]['label'], sentiment[0][2]['score']
     # print(f"Third sentiment: {bot_label}, Score: {bot_score:.3f}")
 
+
 async def writer_worker():
     while True:
-        channel, text, sentiment = await results_queue.get() # Wait for work
+        channel, text, sentiment = await results_queue.get()  # Wait for work
         label, score, latency_ms = sentiment
         print(f"{channel}: {text}")
         print(f"   {label.upper()}, Score: {score:.3f} [{latency_ms:.2f} ms]")
         await save_message((channel, text, sentiment))
         results_queue.task_done()
 
+
 async def save_message(message):
     # Append a single CSV row asynchronously
-    async with aiofiles.open("twitch_chats.csv", mode='a', newline='', encoding='utf-8') as f:
+    async with aiofiles.open(
+        "twitch_chats.csv", mode="a", newline="", encoding="utf-8"
+    ) as f:
         writer = AsyncWriter(f)
         await writer.writerow(message)
 
+
 # Main application
 async def main():
-
     # Start the worker and writer tasks
     asyncio.create_task(model_worker())
     asyncio.create_task(writer_worker())
@@ -136,7 +139,7 @@ async def main():
     twitch = await Twitch(CLIENT_ID, CLIENT_SECRET)
     auth = UserAuthenticator(twitch, USER_SCOPE)
     token, refresh_token = await auth.authenticate()
-    await twitch.set_user_authentication(token, USER_SCOPE, refresh_token) 
+    await twitch.set_user_authentication(token, USER_SCOPE, refresh_token)
     print("Authentication successful.")
 
     # Initialize chat client
@@ -144,7 +147,7 @@ async def main():
 
     # Register message event handler
     chat.register_event(ChatEvent.MESSAGE, on_message)
-        
+
     print("Initializing connection...")
     # Start the chat client
     chat.start()
@@ -153,10 +156,13 @@ async def main():
 
     # Prompt user for target channel
     while True:
-        target_channel = await asyncio.to_thread(input, "\nEnter a valid Twitch channel you wish to connect to (or 'q' to exit): ")
+        target_channel = await asyncio.to_thread(
+            input,
+            "\nEnter a valid Twitch channel you wish to connect to (or 'q' to exit): ",
+        )
         target_channel = target_channel.strip().lower()
-        
-        if target_channel == 'q':
+
+        if target_channel == "q":
             print("\nProgram Status: Off")
             return
         elif not target_channel:
@@ -167,10 +173,10 @@ async def main():
     # Connect & Hold
     try:
         print(f"\nJoining channel: {target_channel}...")
-        
+
         # Attempt to join
         await asyncio.wait_for(chat.join_room(target_channel), timeout=1.5)
-        
+
         print(f"Connected to {target_channel}. Press Ctrl+C to exit.\n")
 
     except asyncio.TimeoutError:
@@ -178,7 +184,9 @@ async def main():
         print("The channel may not exist or you may be banned.")
 
     while True:
-        await asyncio.sleep(0.05) # Constantly sleep to allow for the live view of chats to update
+        await asyncio.sleep(
+            0.05
+        )  # Constantly sleep to allow for the live view of chats to update
 
     # finally:
     #     print("\nStopping chat connection...")
@@ -186,8 +194,9 @@ async def main():
     #     print("Closing Twitch...")
     #     await twitch.close()
     #     print("\nProgram Status: Off")
-    
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

@@ -6,7 +6,7 @@ from transformers import (
     AutoTokenizer,
     DataCollatorForLanguageModeling,
     Trainer,
-    TrainingArguments
+    TrainingArguments,
 )
 from datasets import load_dataset
 
@@ -20,10 +20,12 @@ block_size = 128
 print("Loading tokenizer globally...")
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
+
 # Section 3 - Helper functions
 def tokenize_function(examples):
     # Tokenize texts using the globally loaded tokenizer
     return tokenizer(examples["text"])
+
 
 def group_texts(examples):
     # Concatenate all token lists in the batch and split into fixed-size blocks
@@ -40,6 +42,7 @@ def group_texts(examples):
         for k, t in concatenated_examples.items()
     }
     return result
+
 
 # Section 4 - Main execution: load model inside main to save VRAM and run training
 if __name__ == "__main__":

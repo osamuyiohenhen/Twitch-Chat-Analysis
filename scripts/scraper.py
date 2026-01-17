@@ -18,17 +18,33 @@ USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
 # Target channels for data collection
 TARGET_CHANNELS = [
-    'stableronaldo', 'fanum', 'hasanabi', 'yourragegaming', 'summit1g',
-    'jasontheween', 'silky', 'plaqueboymax', 'jynxzi', 'arky',
-     'ludwig', 'shroud', 'xqc', 'summit1g', 'theburntpeanut', 'yugi2x', 'RDCgaming',
-    '2xrakai', 'sakurashymko'
+    "stableronaldo",
+    "fanum",
+    "hasanabi",
+    "yourragegaming",
+    "summit1g",
+    "jasontheween",
+    "silky",
+    "plaqueboymax",
+    "jynxzi",
+    "arky",
+    "ludwig",
+    "shroud",
+    "xqc",
+    "summit1g",
+    "theburntpeanut",
+    "yugi2x",
+    "RDCgaming",
+    "2xrakai",
+    "sakurashymko",
 ]
 
 output_file = "twitch_data_1m.csv"
 
+
 # Save messages to CSV
 async def save_message(message_list):
-    async with aiofiles.open(output_file, mode='a', newline='', encoding='utf-8') as f:
+    async with aiofiles.open(output_file, mode="a", newline="", encoding="utf-8") as f:
         writer = AsyncWriter(f)
         await writer.writerow(message_list)
 
@@ -41,7 +57,7 @@ async def on_message(msg: ChatMessage):
     if user in BOT_LIST:
         return
     # Skip commands (starting with !)
-    if text.startswith('!'):
+    if text.startswith("!"):
         return
     # Skip links (http or https)
     if "http" in text.lower():  # cheaper than per-word slicing
@@ -55,6 +71,7 @@ async def on_message(msg: ChatMessage):
         pass  # Ignore emoji-related errors
 
     await save_message([channel_name, text])  # Save message to CSV
+
 
 # Main execution
 async def main():
@@ -90,7 +107,8 @@ async def main():
         chat.stop()
         await twitch.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

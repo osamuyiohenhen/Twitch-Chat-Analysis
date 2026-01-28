@@ -1,3 +1,4 @@
+[![CI for Twitch Chat Project](https://github.com/osamuyiohenhen/Twitch-Chat-Analysis/actions/workflows/test.yml/badge.svg)](https://github.com/osamuyiohenhen/Twitch-Chat-Analysis/actions/workflows/test.yml)
 # Real-Time Twitch.tv Chat Analytics Engine
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue) 

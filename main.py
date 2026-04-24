@@ -125,14 +125,14 @@ async def writer_worker():
         label, score, latency_ms = sentiment
         print(f"{channel}: {text}")
         print(f"   {label.upper()}, Score: {score:.3f} [{latency_ms:.2f} ms]")
-        await save_message((channel, text, sentiment))
+        await save_message((channel, text))  # Will add sentiment back later
         results_queue.task_done()
 
 
 async def save_message(message):
     # Append a single CSV row asynchronously
     async with aiofiles.open(
-        "twitch_chats.csv", mode="a", newline="", encoding="utf-8"
+        "twitch_chats_new.csv", mode="a", newline="", encoding="utf-8"
     ) as f:
         writer = AsyncWriter(f)
         await writer.writerow(message)

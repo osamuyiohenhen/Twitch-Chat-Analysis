@@ -9,14 +9,20 @@ from twitchAPI.twitch import Twitch
 import asyncio
 import time
 import os
+import sys
 import random  # For random selection of words to mask
 import aiofiles
 from aiocsv import AsyncWriter
 import torch
 from transformers import AutoTokenizer, AutoModelForMaskedLM, pipeline
 
+
 # Contains APP_ID & APP_SECRET
-import config
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
+import config  # noqa: E402
 
 # Set up Constants
 CLIENT_ID = config.client_id

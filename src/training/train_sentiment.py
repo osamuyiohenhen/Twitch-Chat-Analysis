@@ -12,7 +12,7 @@ from transformers import (
 from torch.utils.data import Dataset
 import shutil
 
-# --- CONFIG ---
+# Config
 # We use the Twitter Sentiment model as the base
 MODEL_NAME = "./final_sentiment_model"
 INPUT_FILE = "labeled_data_v2.csv"
@@ -61,7 +61,7 @@ def main():
     train_texts, val_texts = texts[:split_idx], texts[split_idx:]
     train_labels, val_labels = labels[:split_idx], labels[split_idx:]
 
-    print(f"✅ Samples: {len(train_texts)} Train | {len(val_texts)} Test")
+    print(f"Samples: {len(train_texts)} Train | {len(val_texts)} Test")
 
     # 2. Tokenizer (AutoTokenizer handles the Twitter specifics)
     print(f"Loading Tokenizer ({MODEL_NAME})...")
@@ -108,13 +108,12 @@ def main():
         ],  # Stop if score gets worse 3 times in a row
     )
 
-    print("\n🚀 STARTING TRANSFER LEARNING...")
     trainer.train()
 
-    print(f"\n💾 Saving to {SAVE_DIR}...")
+    print(f"\n Saving to {SAVE_DIR}...")
     model.save_pretrained(SAVE_DIR)
     tokenizer.save_pretrained(SAVE_DIR)
-    print("✅ DONE! You now have a Twitch-Smart Sentiment Bot.")
+    print("Done. Sentiment model generated.")
 
 
 if __name__ == "__main__":

@@ -4,6 +4,5 @@ aiocsv
 transformers
 datasets
 accelerate
-torch
 huggingface-hub
 ruff

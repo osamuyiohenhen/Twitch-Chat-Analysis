@@ -12,57 +12,47 @@
 ---
 
 ## About The Project
-This project extends a standard sentiment analysis tool into a real-time analytics engine capable of handling the chaotic environment of Twitch.tv chat.
+Real-time sentiment analysis engine for Twitch chat. Standard models fail on live chat due to latency constraints and gaming slang. This project solves both of those issues.
 
-It started with a simple goal: **"Can a model understand the emotional flow of a live stream?"**
-However, standard models failed because:
-1. They were too slow for live chat (latency).
-2. They didn't understand gaming slang (e.g., "Pog", "throw", "cap"). 
-
-This pipeline was engineered specifically to solve those constraints while moving toward accurate, real-time moderation and sentiment tracking.
-
+Why it matters:
+- **Too slow:** Standard models add 300+ ms per message. Users need <60 ms, especially for rooms that operate at 50+ msgs/sec.
+- **Wrong dialect:** "Pog", "throw", "cap" aren't in standard datasets.
 ## System Design
 
-Designed primarily for environments with **high velocity** (bursts of 50+ msgs/s) and **noisy syntax**.
-It uses a hybrid architecture: training on cloud GPUs and conducting inference locally for fast performance.
+The pipeline uses three key components:
 
 ### 1. Asynchronous Data Ingestion
-**Challenge:**
-Twitch chat is extremely bursty &mdash; A hype moment can spike traffic from 5 &rarr; 100 messages/second instantly, causing many scrapers to freeze or drop packets.
+Twitch chat can spike from 5 to 100 messages/second instantly. Most scrapers freeze or drop packets.
 
-**Solution:**
-An `asyncio` + `twitchAPI` ingestion pipeline to handle the WebSocket connection. This prevents blocking and ensures stability even when message volume surges.
+Solution: An `asyncio` + `twitchAPI` pipeline handles WebSocket connections without blocking. Stable even during traffic surges.
 
 ---
 
-### 2. The Two-Stage Model Development
+### 2. Two-Stage Model Development
 
-**Stage 1: Domain Adaptation**
-* **Problem:** Standard models think "He is cracked" means "He is broken" (Negative). In gaming, it means "He is skilled" (Positive).
-* **Solution:** I trained a RoBERTa model on **1.1 million unlabeled Twitch messages** using **Masked Language Modeling (MLM)**. This "taught" the model the dialect of Twitch before it ever learned about sentiment.
-* **Result:** Perplexity dropped from ~21k &rarr; ~5.5.
+**Stage 1: Domain Adaptation (MLM)**
+Standard models think "He is cracked" means broken. In gaming, it means skilled. Trained RoBERTa on 1.1M unlabeled Twitch messages to "teach" it gaming dialect. Perplexity improved from ~21k to ~5.5.
 
 **Stage 2: Sentiment Fine-Tuning**
-* **Problem:** Understanding slang isn't enough; we need to know if the chat is Happy, Angry, or Neutral.
-* **Solution:** Fine-tuned the domain-adapted model on a labeled dataset of chat logs.
-* **Result:** A classifier that correctly identifies nuances like sarcasm and hype that standard models miss.
+Fine-tuned the domain-adapted model on labeled chat logs. Result: Correctly identifies nuances like sarcasm and hype.
 
 ---
 
 ### 3. Hybrid Cloud/Local Architecture
-**Challenge:** Training is too heavy for a laptop, but cloud inference (API) is too slow for real-time chat.
-**Solution:**
-* **Training (Cloud):** Heavy MLM pre-training and Fine-tuning runs on Google Colab (A100 GPU).
-* **Inference (Local):** The optimized model is deployed locally on an RTX 4050 using FP16 mixed precision.
-* **Performance:** Achieves **<60ms end-to-end latency** per message.
+Training is compute-heavy, but cloud inference APIs are too slow for real-time chat.
 
-## 🛠️ Tech Stack
+- **Training:** MLM pre-training and sentiment fine-tuning on Google Colab (A100 GPU)
+- **Inference:** Local deployment on RTX 4050 using FP16 mixed precision
+- **Performance:** <60ms end-to-end latency per message
 
-* **Language:** Python 3.10+
-* **ML Framework:** PyTorch, Hugging Face Transformers
-* **Data & Async:** `asyncio`, `aiofiles`, `aiocsv`
-* **DevOps & CI:** GitHub Actions, Ruff (Linting/Formatting)
-* **API:** `twitchAPI` (OAuth2 Authentication)
+## Tech Stack
+
+- **Language:** Python 3.10+
+- **ML:** PyTorch, Hugging Face Transformers
+- **Async:** `asyncio`, `aiofiles`, `aiocsv`
+- **Dashboard:** Streamlit, Plotly
+- **API:** `twitchAPI` (OAuth2)
+- **DevOps:** GitHub Actions, Ruff
 
 
 ## Getting Started
@@ -83,45 +73,53 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install Dependencies
+### 3. Install PyTorch (GPU Optional)
+
+If you have an NVIDIA GPU, considering installing CUDA-enabled PyTorch first to have improved inference performance:
+```bash
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+```
+
+### 4. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
-*Note: If you have an NVIDIA GPU, [install the CUDA version of PyTorch first.](https://pytorch.org/get-started/locally/)*
 
-### 4. Twitch API Keys & Config
+*If you installed CUDA PyTorch in step 3, pip will skip torch (already installed) and install everything else.*
 
-You need a Client ID and Secret from the Twitch Developer Console.
+### 4. Environment Variables
 
-1. Create a file named `config.py` in the root folder.
-2. Add your credentials:
-```bash
-# config.py
-client_id = 'YOUR_TWITCH_CLIENT_ID'
-client_secret = 'YOUR_TWITCH_CLIENT_SECRET'
+Create a `.env` file in the root folder:
+```
+TWITCH_CLIENT_ID=your_twitch_client_id
+TWITCH_CLIENT_SECRET=your_twitch_client_secret
 ```
 
-### 5. Run it
-The pipeline is designed to **automatically download** the latest model weights from Hugging Face if they aren't found locally.
+**Do not commit `.env`** — Add to `.gitignore` to keep secrets safe.
+
+The app uses `python-dotenv` to automatically load these variables.
+
+### 5. Run the Dashboard
+
 ```bash
-python main.py
+streamlit run viewer.py
 ```
-1. Authenticate when prompted.
-2. Enter the channel name you want to analyze (e.g., `shroud`).
-3. Watch the real-time sentiment classification in the terminal.
+
+1. Open the sidebar and enter a Twitch channel name (e.g., `xQc`)
+2. Click "Connect"
+3. Watch real-time sentiment analysis in the dashboard
+
+(Or use `feeder.py` to test with mock data if you don't want to go live)
 
 ## Roadmap
-* [x] **Async Scraper:** Built high-throughput chat scraper.
 
-* [x] **Domain Adaptation (WIP):** Implemented MLM training to learn Twitch slang.
-
-* [x] **CI/CD Pipeline:** Automated testing and linting (Ruff) via GitHub Actions.
-
-* [x] **Fine-Tuning:** Train final sentiment classifier on labeled data.
-
-* [x] **Dashboard:** Build a Streamlit UI to visualize live sentiment trends.
-
-* [ ] **Adapters:** Experiment with lightweight adapters for specific streamer communities.
+- [x] **Async Scraper:** High-throughput chat scraper
+- [x] **Domain Adaptation:** MLM training on Twitch slang
+- [x] **CI/CD Pipeline:** Automated testing via GitHub Actions
+- [x] **Fine-Tuning:** Sentiment classifier on labeled data
+- [x] **Dashboard:** Streamlit UI with live sentiment tracking
+- [ ] **Cloud Deployment:** Docker containerization and cloud hosting (AWS/GCP)
+- [ ] **Adapters:** Lightweight adapters for specific streamer communities
 
 ## Acknowledgements & License
 

@@ -13,7 +13,7 @@ from torch.utils.data import Dataset
 import shutil
 
 # Config
-# We use the Twitter Sentiment model as the base
+# We use our previous sentiment model as the base
 MODEL_NAME = "./final_sentiment_model"
 INPUT_FILE = "labeled_data_v2.csv"
 SAVE_DIR = "./twitch-sentiment-v2"

@@ -1,3 +1,12 @@
+---
+title: Twitch Chat Sentiment Engine
+emoji: 🎮
+colorFrom: purple
+colorTo: red
+sdk: docker
+pinned: false
+---
+
 # Real-Time Twitch.tv Chat Analytics Engine
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue) 

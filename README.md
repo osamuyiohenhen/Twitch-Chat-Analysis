@@ -6,8 +6,8 @@
 ![License](https://img.shields.io/badge/License-Apache%202.0-green)
 
 ### Demo
-![Demo of Twitch Chat Analyzer](demo.gif)
-*A preview of the engine connecting to live channels and processing messages in real-time.*
+![Demo of Twitch Chat Analyzer](proj_demo.gif)
+*A preview of the engine connecting to a live channel and processing messages in real-time.*
 
 ---
 

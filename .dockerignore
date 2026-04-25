@@ -1,0 +1,6 @@
+.env
+creds/
+models/
+__pycache__
+.vscode
+*.pyc

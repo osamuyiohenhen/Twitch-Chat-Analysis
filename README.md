@@ -11,19 +11,19 @@
 
 ---
 
-## 📖 About The Project
+## About The Project
 This project extends a standard sentiment analysis tool into a real-time analytics engine capable of handling the chaotic environment of Twitch.tv chat.
 
-It started with a simple goal: **"Can a model understand the emotional flow of a live Twitch stream?"**
+It started with a simple goal: **"Can a model understand the emotional flow of a live stream?"**
 However, standard models failed because:
 1. They were too slow for live chat (latency).
 2. They didn't understand gaming slang (e.g., "Pog", "throw", "cap"). 
 
 This pipeline was engineered specifically to solve those constraints while moving toward accurate, real-time moderation and sentiment tracking.
 
-## ⚙️ System Architecture
+## System Design
 
-Designed for environments with **high velocity** (bursts of 50+ msgs/s) and **noisy syntax**.
+Designed primarily for environments with **high velocity** (bursts of 50+ msgs/s) and **noisy syntax**.
 It uses a hybrid architecture: training on cloud GPUs and conducting inference locally for fast performance.
 
 ### 1. Asynchronous Data Ingestion
@@ -65,7 +65,7 @@ An `asyncio` + `twitchAPI` ingestion pipeline to handle the WebSocket connection
 * **API:** `twitchAPI` (OAuth2 Authentication)
 
 
-## 💻 Getting Started
+## Getting Started
 
 ### 1. Clone the Repo
 ```bash
@@ -87,7 +87,7 @@ source .venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
-*Note: If you have an NVIDIA GPU, install the CUDA version of PyTorch first.*
+*Note: If you have an NVIDIA GPU, [install the CUDA version of PyTorch first.](https://pytorch.org/get-started/locally/)*
 
 ### 4. Twitch API Keys & Config
 
@@ -110,7 +110,7 @@ python main.py
 2. Enter the channel name you want to analyze (e.g., `shroud`).
 3. Watch the real-time sentiment classification in the terminal.
 
-## 🛣️ Roadmap
+## Roadmap
 * [x] **Async Scraper:** Built high-throughput chat scraper.
 
 * [x] **Domain Adaptation (WIP):** Implemented MLM training to learn Twitch slang.
@@ -119,7 +119,7 @@ python main.py
 
 * [x] **Fine-Tuning:** Train final sentiment classifier on labeled data.
 
-* [ ] **Dashboard:** Build a Streamlit UI to visualize live sentiment trends.
+* [x] **Dashboard:** Build a Streamlit UI to visualize live sentiment trends.
 
 * [ ] **Adapters:** Experiment with lightweight adapters for specific streamer communities.
 
@@ -127,4 +127,4 @@ python main.py
 
 **License:** Apache 2.0.
 
-**Attribution:** This model is a fine-tuned version of [cardiffnlp/twitter-roberta-base-sentiment-latest](https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest).
+**Attribution:** This model is a modified and fine-tuned version of [cardiffnlp/twitter-roberta-base-sentiment-latest](https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest).

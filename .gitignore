@@ -170,10 +170,6 @@ cython_debug/
 # Ruff stuff:
 .ruff_cache/
 
-# --- Project specific ignores ---
-
-# Client Secrets
-config.py
 .pypirc
 
 # Data files

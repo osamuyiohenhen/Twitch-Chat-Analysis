@@ -47,7 +47,7 @@ with st.sidebar:
         else:
             st.warning("Model already running. Disconnect first.")
 
-    # BUTTON: DISCONNECT
+    # Disconnect Button
     if st.button("Stop / Disconnect"):
         if st.session_state.process:
             st.session_state.connected = False
@@ -58,7 +58,7 @@ with st.sidebar:
             st.rerun()
             st.info("Stopped.")
 
-# --- MAIN DISPLAY ---
+# Main display
 status_area = st.empty()
 col1, col2 = st.columns([3, 1])
 

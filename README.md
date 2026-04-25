@@ -103,7 +103,7 @@ The app uses `python-dotenv` to automatically load these variables.
 ### 5. Run the Dashboard
 
 ```bash
-streamlit run viewer.py
+streamlit run app.py
 ```
 
 1. Open the sidebar and enter a Twitch channel name (e.g., `xQc`)

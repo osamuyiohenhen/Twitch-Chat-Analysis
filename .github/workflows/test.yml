@@ -1,4 +1,4 @@
-name: CI for Twitch Chat Project
+name: CI for Twitch Chat Analysis Project
 
 on:
   push:

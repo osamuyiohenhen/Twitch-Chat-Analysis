@@ -1,6 +1,6 @@
 from twitchAPI.chat import Chat, ChatMessage
 from twitchAPI.type import AuthScope, ChatEvent
-from twitchAPI.oauth import UserAuthenticator
+from twitchAPI.oauth import UserAuthenticationStorageHelper
 from twitchAPI.twitch import Twitch
 import asyncio
 import time
@@ -21,6 +21,7 @@ results_queue = asyncio.Queue()
 HF_REPO = "muyihenhen/twitch-roberta-sentiment-v1"
 LOCAL_DIR = "models/twitch-sentiment-v2" # local filepath for model
 
+TARGET_SCOPES = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
 def load_model():
     """Load sentiment classifier from local or HuggingFace."""
@@ -102,11 +103,9 @@ async def run_backend_async(target_channel, loaded_classifier):
     asyncio.create_task(writer_worker())
 
     twitch = await Twitch(config.client_id, config.client_secret)
-    auth = UserAuthenticator(twitch, [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT])
-    token, refresh_token = await auth.authenticate()
-    await twitch.set_user_authentication(
-        token, [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT], refresh_token
-    )
+
+    helper = UserAuthenticationStorageHelper(twitch, TARGET_SCOPES, storage_path='token.json')
+    await helper.bind()
 
     chat = await Chat(twitch)
     chat.register_event(ChatEvent.MESSAGE, on_message)

@@ -4,6 +4,10 @@ aiocsv
 transformers
 datasets
 accelerate
-torch
 huggingface-hub
+torch
+streamlit
+plotly
+pandas
+python-dotenv
 ruff

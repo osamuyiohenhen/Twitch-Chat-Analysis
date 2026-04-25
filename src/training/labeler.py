@@ -10,7 +10,7 @@ OUTPUT_FILE = "labeled_data_v2.csv"
 def main():
     # 1. Load Raw Data
     if not os.path.exists(INPUT_FILE):
-        print(f"❌ Error: {INPUT_FILE} not found.")
+        print(f"Error: {INPUT_FILE} not found.")
         return
 
     # Engine='python' handles messy chat logs better
@@ -31,7 +31,7 @@ def main():
             seen_indices = set(df_labeled["original_index"].tolist())
         else:
             seen_indices = set()
-        print(f"🔄 Loaded {len(seen_indices)} labeled rows.")
+        print(f"Loaded {len(seen_indices)} labeled rows.")
     else:
         # Create new file with these columns
         df_labeled = pd.DataFrame(
@@ -40,7 +40,7 @@ def main():
         seen_indices = set()
         df_labeled.to_csv(OUTPUT_FILE, index=False)
 
-    print("\n--- RANDOMIZED SPEED LABELER ---")
+    print("\n--- Randomized Labeler ---")
     print("KEYS: [1] Negative  [2] Neutral  [3] Positive")
     print("      [s] Skip (Garbage)  [q] Quit")
     print(f"Pool Size: {total_rows} messages")
@@ -54,7 +54,7 @@ def main():
             available_indices = list(set(df.index) - seen_indices)
 
             if not available_indices:
-                print("🎉 YOU HAVE PROCESSED EVERYTHING! AMAZING!")
+                print("All messages have been processed.")
                 break
 
             # 4. PICK A RANDOM MESSAGE
@@ -70,68 +70,63 @@ def main():
                 continue
 
             # 5. Display
-            print(f"\n📺 [{channel_name}]")
-            print(f"💬 {msg_text}")
+            print(f"\n[{channel_name}]")
+            print(f"{msg_text}")
 
             # 6. Get Input
             while True:
                 choice = input("Label? > ").lower()
 
-                if choice == "q":
-                    raise KeyboardInterrupt
+                match choice:
+                    case "q":
+                        raise KeyboardInterrupt
 
-                elif choice == "s":  # <--- NEW SKIP FEATURE
-                    print("--> 🗑️ Skipped (Garbage)")
-                    # We add it to 'seen_indices' so it never comes back,
-                    # BUT we do NOT add it to 'new_rows', so it's not in the dataset.
-                    seen_indices.add(random_idx)
-                    break
+                    case "s":
+                        print("-> Skipped")
+                        seen_indices.add(random_idx)
+                        break
 
-                elif choice == "1":
-                    label = 0  # Negative
-                    print("--> 🔴 Negative")
-                    # Add to batch
-                    new_rows.append(
-                        {
-                            "channel": channel_name,
-                            "message": msg_text,
-                            "label": label,
-                            "original_index": random_idx,
-                        }
-                    )
-                    seen_indices.add(random_idx)
-                    break
+                    case "1":
+                        new_rows.append(
+                            {
+                                "channel": channel_name,
+                                "message": msg_text,
+                                "label": 0,
+                                "original_index": random_idx,
+                            }
+                        )
+                        print("-> Negative")
+                        seen_indices.add(random_idx)
+                        break
 
-                elif choice == "2":
-                    label = 1  # Neutral
-                    print("--> 🟡 Neutral")
-                    new_rows.append(
-                        {
-                            "channel": channel_name,
-                            "message": msg_text,
-                            "label": label,
-                            "original_index": random_idx,
-                        }
-                    )
-                    seen_indices.add(random_idx)
-                    break
+                    case "2":
+                        new_rows.append(
+                            {
+                                "channel": channel_name,
+                                "message": msg_text,
+                                "label": 1,
+                                "original_index": random_idx,
+                            }
+                        )
+                        print("-> Neutral")
+                        seen_indices.add(random_idx)
+                        break
 
-                elif choice == "3":
-                    label = 2  # Positive
-                    print("--> 🟢 Positive")
-                    new_rows.append(
-                        {
-                            "channel": channel_name,
-                            "message": msg_text,
-                            "label": label,
-                            "original_index": random_idx,
-                        }
-                    )
-                    seen_indices.add(random_idx)
-                    break
+                    case "3":
+                        new_rows.append(
+                            {
+                                "channel": channel_name,
+                                "message": msg_text,
+                                "label": 2,
+                                "original_index": random_idx,
+                            }
+                        )
+                        print("-> Positive")
+                        seen_indices.add(random_idx)
+                        break
 
-                else:
-                    print("Invalid. Use 1, 2, 3, or s (skip).")
+                    case _:
+                        print("Invalid. Use 1, 2, 3, or s (skip).")
 
             # 7. Auto-save every 5 LABELED rows
             if len(new_rows) >= 5:
@@ -139,15 +134,15 @@ def main():
                     OUTPUT_FILE, mode="a", header=False, index=False
                 )
                 new_rows = []
-                print(f"--- Saved (Progress: {len(seen_indices)} processed) ---")
+                print(f"-- Saved (Progress: {len(seen_indices)} processed) --")
 
     except KeyboardInterrupt:
-        print("\n\n🛑 Pausing...")
+        print("\nPausing...")
 
     # Final Save
     if new_rows:
         pd.DataFrame(new_rows).to_csv(OUTPUT_FILE, mode="a", header=False, index=False)
-        print("✅ Final Batch Saved.")
+        print("Final batch saved.")
 
 
 if __name__ == "__main__":

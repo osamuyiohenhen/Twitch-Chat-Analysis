@@ -80,45 +80,51 @@ def main():
                 match choice:
                     case "q":
                         raise KeyboardInterrupt
-                    
+
                     case "s":
                         print("-> Skipped")
-                        seen_indices.add(random_idx) 
+                        seen_indices.add(random_idx)
                         break
-                    
+
                     case "1":
-                        new_rows.append({
-                            "channel": channel_name,
-                            "message": msg_text,
-                            "label": 0,
-                            "original_index": random_idx,
-                        })
+                        new_rows.append(
+                            {
+                                "channel": channel_name,
+                                "message": msg_text,
+                                "label": 0,
+                                "original_index": random_idx,
+                            }
+                        )
                         print("-> Negative")
                         seen_indices.add(random_idx)
                         break
-                    
+
                     case "2":
-                        new_rows.append({
-                            "channel": channel_name,
-                            "message": msg_text,
-                            "label": 1,
-                            "original_index": random_idx,
-                        })
+                        new_rows.append(
+                            {
+                                "channel": channel_name,
+                                "message": msg_text,
+                                "label": 1,
+                                "original_index": random_idx,
+                            }
+                        )
                         print("-> Neutral")
                         seen_indices.add(random_idx)
                         break
-                    
+
                     case "3":
-                        new_rows.append({
-                            "channel": channel_name,
-                            "message": msg_text,
-                            "label": 2,
-                            "original_index": random_idx,
-                        })
+                        new_rows.append(
+                            {
+                                "channel": channel_name,
+                                "message": msg_text,
+                                "label": 2,
+                                "original_index": random_idx,
+                            }
+                        )
                         print("-> Positive")
                         seen_indices.add(random_idx)
                         break
-                    
+
                     case _:
                         print("Invalid. Use 1, 2, 3, or s (skip).")
 

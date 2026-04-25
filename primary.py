@@ -19,9 +19,10 @@ raw_queue = asyncio.Queue()
 results_queue = asyncio.Queue()
 
 HF_REPO = "muyihenhen/twitch-roberta-sentiment-v1"
-LOCAL_DIR = "models/twitch-sentiment-v2" # local filepath for model
+LOCAL_DIR = "models/twitch-sentiment-v2"  # local filepath for model
 
 TARGET_SCOPES = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
+
 
 def load_model():
     """Load sentiment classifier from local or HuggingFace."""
@@ -97,18 +98,17 @@ async def save_message(data_row):
         writer = AsyncWriter(f)
         await writer.writerow(data_row)
 
+
 async def run_backend_async(target_channel, loaded_classifier):
     """Main backend: authenticate, connect to chat, and process messages."""
     asyncio.create_task(model_worker(loaded_classifier))
     asyncio.create_task(writer_worker())
-    
+
     twitch = await Twitch(config.client_id, config.client_secret)
-    os.makedirs('creds', exist_ok=True)
+    os.makedirs("creds", exist_ok=True)
     helper = UserAuthenticationStorageHelper(
-        twitch,
-        TARGET_SCOPES,
-        storage_path='creds/token.json'
-        )
+        twitch, TARGET_SCOPES, storage_path="creds/token.json"
+    )
     await helper.bind()
 
     chat = await Chat(twitch)

@@ -11,7 +11,7 @@ st.title("Twitch Sentiment Engine")
 
 # Config
 FILE_PATH = "live_data.csv"
-WINDOW_SECONDS = 2 # window of time to look at chat messages
+WINDOW_SECONDS = 2  # window of time to look at chat messages
 
 # Session State
 # This remembers if we are connected even if the graph refreshes
@@ -68,6 +68,7 @@ with col1:
 with col2:
     metric_placeholder = st.empty()
 
+
 # This fragment only runs update_dashboard every 0.1s
 # This prevents the whole page from lagging or jumping.
 @st.fragment(run_every=0.1)
@@ -82,7 +83,7 @@ def update_dashboard():
             except pd.errors.EmptyDataError:
                 df = pd.DataFrame()
             except Exception:
-                return # Try again next fragment tick
+                return  # Try again next fragment tick
 
             # 2. Filter Data (Last 2 Seconds)
             if not df.empty and "timestamp" in df.columns:
@@ -124,7 +125,7 @@ def update_dashboard():
                             go.Bar(
                                 x=["Positive", "Negative"],
                                 y=[avg_pos, avg_neg],
-                                marker_color=["#00CC96", "#EF553B"], # Green and Red
+                                marker_color=["#00CC96", "#EF553B"],  # Green and Red
                             )
                         ]
                     )
@@ -133,14 +134,12 @@ def update_dashboard():
                         yaxis_range=[0, 1],
                         height=400,
                         margin=dict(t=10, b=10),
-                        # 100ms transition makes the bars update smoothly 
+                        # 100ms transition makes the bars update smoothly
                         transition={"duration": 100, "easing": "cubic-in-out"},
                     )
 
                     # Render
-                    chart_placeholder.plotly_chart(
-                        fig, width='stretch'
-                    )
+                    chart_placeholder.plotly_chart(fig, width="stretch")
 
                     # Display Most Recent Message
                     if not df.empty:
@@ -148,10 +147,16 @@ def update_dashboard():
                         channel = latest_row["channel"]
                         message = latest_row["message"]
                         label = latest_row["label"]
-                        
+
                         # Color code based on sentiment
-                        sentiment_color = "🟢" if label.lower() == "positive" else "🔴" if label.lower() == "negative" else "⚪"
-                        
+                        sentiment_color = (
+                            "🟢"
+                            if label.lower() == "positive"
+                            else "🔴"
+                            if label.lower() == "negative"
+                            else "⚪"
+                        )
+
                         recent_msg_placeholder.markdown(
                             f"**Latest Message** {sentiment_color}\n\n"
                             f"**{channel}**: _{message}_"
@@ -161,6 +166,7 @@ def update_dashboard():
                     metric_placeholder.info("Waiting for chat...")
     else:
         status_area.info("👈 Enter a channel and click Connect to start.")
+
 
 # Run the fragment
 update_dashboard()

@@ -101,10 +101,14 @@ async def run_backend_async(target_channel, loaded_classifier):
     """Main backend: authenticate, connect to chat, and process messages."""
     asyncio.create_task(model_worker(loaded_classifier))
     asyncio.create_task(writer_worker())
-
+    
     twitch = await Twitch(config.client_id, config.client_secret)
-
-    helper = UserAuthenticationStorageHelper(twitch, TARGET_SCOPES, storage_path='token.json')
+    os.makedirs('creds', exist_ok=True)
+    helper = UserAuthenticationStorageHelper(
+        twitch,
+        TARGET_SCOPES,
+        storage_path='creds/token.json'
+        )
     await helper.bind()
 
     chat = await Chat(twitch)

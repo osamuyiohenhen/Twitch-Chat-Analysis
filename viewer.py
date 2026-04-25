@@ -11,7 +11,7 @@ st.title("Twitch Sentiment Engine")
 
 # Config
 FILE_PATH = "live_data.csv"
-WINDOW_SECONDS = 0.5 # window of time to look at chat messages
+WINDOW_SECONDS = 2 # window of time to look at chat messages
 
 # Session State
 # This remembers if we are connected even if the graph refreshes
@@ -45,15 +45,17 @@ with st.sidebar:
             st.session_state.current_channel = channel_input
             st.success(f"Connected to {channel_input}!")
         else:
-            st.warning("Already running! Disconnect first.")
+            st.warning("Model already running. Disconnect first.")
 
     # BUTTON: DISCONNECT
     if st.button("Stop / Disconnect"):
         if st.session_state.process:
-            # Kill the background process
-            st.session_state.process.kill()
-            st.session_state.process = None
             st.session_state.connected = False
+            # Kill the background process
+            st.session_state.process.terminate()
+            st.session_state.process = None
+            st.session_state.current_channel = ""
+            st.rerun()
             st.info("Stopped.")
 
 # --- MAIN DISPLAY ---
@@ -88,7 +90,7 @@ def update_dashboard():
                 recent_df = df[df["timestamp"] > (current_time - WINDOW_SECONDS)]
 
                 if not recent_df.empty:
-                    # 3. Logic: Calculate Averages (Split)
+                    # Calculate Averages (Split)
                     pos_totals = []
                     neg_totals = []
 
@@ -128,7 +130,7 @@ def update_dashboard():
                     )
 
                     fig.update_layout(
-                        yaxis_range=[0, 1], # KEEP CONSTANT
+                        yaxis_range=[0, 1],
                         height=400,
                         margin=dict(t=10, b=10),
                         # 100ms transition makes the bars update smoothly 

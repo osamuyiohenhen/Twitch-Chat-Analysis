@@ -103,9 +103,13 @@ async def run_backend_async(target_channel, loaded_classifier):
     asyncio.create_task(model_worker(loaded_classifier))
     asyncio.create_task(writer_worker())
 
-    twitch = await Twitch(config.client_id, config.client_secret)
-    await twitch.authenticate_app([])
-
+    twitch = await Twitch(config.client_id, config.client_secret, authenticate_app=False)
+    await twitch.set_user_authentication(
+        config.user_token,
+        TARGET_SCOPES,
+        config.refresh_token
+    )
+    
     chat = await Chat(twitch)
     chat.register_event(ChatEvent.MESSAGE, on_message)
     chat.start()

@@ -5,7 +5,6 @@ transformers
 datasets
 accelerate
 huggingface-hub
-torch
 streamlit
 plotly
 pandas

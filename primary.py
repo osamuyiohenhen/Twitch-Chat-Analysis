@@ -1,6 +1,5 @@
 from twitchAPI.chat import Chat, ChatMessage
 from twitchAPI.type import AuthScope, ChatEvent
-from twitchAPI.oauth import UserAuthenticationStorageHelper
 from twitchAPI.twitch import Twitch
 import asyncio
 import time
@@ -104,12 +103,12 @@ async def run_backend_async(target_channel, loaded_classifier):
     asyncio.create_task(model_worker(loaded_classifier))
     asyncio.create_task(writer_worker())
 
-    twitch = await Twitch(config.client_id, config.client_secret)
-    os.makedirs("creds", exist_ok=True)
-    helper = UserAuthenticationStorageHelper(
-        twitch, TARGET_SCOPES, storage_path="creds/token.json"
+    twitch = await Twitch(
+        config.client_id, config.client_secret, authenticate_app=False
     )
-    await helper.bind()
+    await twitch.set_user_authentication(
+        config.user_token, TARGET_SCOPES, config.refresh_token
+    )
 
     chat = await Chat(twitch)
     chat.register_event(ChatEvent.MESSAGE, on_message)

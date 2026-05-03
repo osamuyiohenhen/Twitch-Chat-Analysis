@@ -58,6 +58,10 @@ with st.sidebar:
             st.rerun()
             st.info("Stopped.")
 
+    # Disclaimer
+    st.sidebar.warning("Note: Multiple simultaneous users may cause mixed results.")
+
+
 # Main display
 status_area = st.empty()
 col1, col2 = st.columns([3, 1])

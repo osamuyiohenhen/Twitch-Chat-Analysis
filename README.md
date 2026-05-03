@@ -95,7 +95,7 @@ pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt
 ```
 
-### 4. Environment Variables
+### 5. Environment Variables
 
 Create a `.env` file in the root folder:
 ```
@@ -107,7 +107,7 @@ TWITCH_CLIENT_SECRET=your_twitch_client_secret
 
 The app uses `python-dotenv` to automatically load these variables.
 
-### 5. Run the Dashboard
+### 6. Run the Dashboard
 
 ```bash
 streamlit run app.py

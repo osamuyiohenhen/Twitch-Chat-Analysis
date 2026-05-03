@@ -1,18 +1,12 @@
----
-title: Twitch Chat Sentiment Engine
-emoji: 🎮
-colorFrom: purple
-colorTo: red
-sdk: docker
-pinned: false
----
-
 # Real-Time Twitch.tv Chat Analytics Engine
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue) 
 ![PyTorch](https://img.shields.io/badge/PyTorch-GPU%20Accelerated-orange) 
 ![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Transformers-yellow)
 ![License](https://img.shields.io/badge/License-Apache%202.0-green)
+
+### [Live Demo](https://huggingface.co/spaces/muyihenhen/twitch-chat-sentiment-engine)
+> **Note:** If the app appears unresponsive, please refresh the page to reconnect.
 
 ### Demo
 ![Demo of Twitch Chat Analyzer](proj_demo.gif)
@@ -51,8 +45,8 @@ Fine-tuned the domain-adapted model on labeled chat logs. Result: Correctly iden
 Training is compute-heavy, but cloud inference APIs are too slow for real-time chat.
 
 - **Training:** MLM pre-training and sentiment fine-tuning on Google Colab (A100 GPU)
-- **Inference:** Local deployment on RTX 4050 using FP16 mixed precision
-- **Performance:** <60ms end-to-end latency per message
+- **Inference:** CPU deployment on Hugging Face Spaces, GPU-accelerated locally on RTX 4050 using FP16 mixed precision
+- **Performance:** <60ms latency locally, ~200ms on cloud CPU
 
 ## Tech Stack
 
@@ -82,19 +76,23 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install PyTorch (GPU Optional)
+### 3. Install PyTorch
 
 If you have an NVIDIA GPU, considering installing CUDA-enabled PyTorch first to have improved inference performance:
 ```bash
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+pip install torch --index-url https://download.pytorch.org/whl/cu126
+```
+
+If you do not have one, you must install the CPU-only version of PyTorch:
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
 ```
 
 ### 4. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
-
-*If you installed CUDA PyTorch in step 3, pip will skip torch (already installed) and install everything else.*
 
 ### 4. Environment Variables
 
@@ -127,7 +125,7 @@ streamlit run app.py
 - [x] **CI/CD Pipeline:** Automated testing via GitHub Actions
 - [x] **Fine-Tuning:** Sentiment classifier on labeled data
 - [x] **Dashboard:** Streamlit UI with live sentiment tracking
-- [ ] **Cloud Deployment:** Docker containerization and cloud hosting (AWS/GCP)
+- [x] **Cloud Deployment:** Dockerized and deployed on Hugging Face Spaces
 - [ ] **Adapters:** Lightweight adapters for specific streamer communities
 
 ## Acknowledgements & License

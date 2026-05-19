@@ -2,13 +2,14 @@ from twitchAPI.chat import Chat, ChatMessage
 from twitchAPI.type import AuthScope, ChatEvent
 from twitchAPI.twitch import Twitch
 import asyncio
-import time
 import os
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 import torch
 from aiocsv import AsyncWriter
 import aiofiles
+import aiosqlite
+import time
 
 # Config
 import config
@@ -19,6 +20,7 @@ results_queue = asyncio.Queue()
 
 HF_REPO = "muyihenhen/twitch-roberta-sentiment-v1"
 LOCAL_DIR = "models/twitch-sentiment-v2"  # local filepath for model
+DB_PATH = "twitch_data.db"
 
 TARGET_SCOPES = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
@@ -46,6 +48,24 @@ def load_model():
         print(f"Error loading model: {e}")
         return None
 
+async def init_db():
+    """Run this once to set up the table and WAL mode."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS chat_log (
+                timestamp REAL,
+                channel TEXT,
+                message TEXT,
+                label TEXT,
+                score REAL,
+                latency REAL
+            )
+        """)
+        # The index makes querying the last 2 seconds instant
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_time ON chat_log(timestamp)")
+        # WAL mode allows Streamlit to read while this script is writing
+        await db.execute("PRAGMA journal_mode=WAL")
+        await db.commit()
 
 async def on_message(msg: ChatMessage):
     """Twitch chat event handler. Filter and queue valid messages."""
@@ -78,28 +98,25 @@ async def model_worker(classifier):
 
 
 async def writer_worker():
-    """Write results to CSV file."""
-    with open("live_data.csv", mode="w", newline="", encoding="utf-8") as f:
-        f.write("timestamp,channel,message,label,score,latency\n")
-
+    """Write results to SQLite instead of CSV."""
     while True:
         channel, text, sentiment = await results_queue.get()
         label, score, latency = sentiment
-        await save_message([time.time(), channel, text, label, score, latency])
+        
+        # Write directly to the DB
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                "INSERT INTO chat_log VALUES (?, ?, ?, ?, ?, ?)", 
+                [time.time(), channel, text, label, score, latency]
+            )
+            await db.commit()
+            
         results_queue.task_done()
-
-
-async def save_message(data_row):
-    """Async append row to CSV."""
-    async with aiofiles.open(
-        "live_data.csv", mode="a", newline="", encoding="utf-8"
-    ) as f:
-        writer = AsyncWriter(f)
-        await writer.writerow(data_row)
 
 
 async def run_backend_async(target_channel, loaded_classifier):
     """Main backend: authenticate, connect to chat, and process messages."""
+    await init_db()
     asyncio.create_task(model_worker(loaded_classifier))
     asyncio.create_task(writer_worker())
 

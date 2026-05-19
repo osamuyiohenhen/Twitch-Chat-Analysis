@@ -175,6 +175,8 @@ cython_debug/
 # Data files
 data/
 *.csv
+*.db
+
 
 # Model files
 models/

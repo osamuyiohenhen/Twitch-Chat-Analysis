@@ -1,6 +1,7 @@
 twitchAPI
 aiofiles
 aiocsv
+aiosqlite
 transformers
 datasets
 accelerate

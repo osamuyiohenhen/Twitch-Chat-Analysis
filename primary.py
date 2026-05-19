@@ -20,7 +20,7 @@ results_queue = asyncio.Queue()
 
 HF_REPO = "muyihenhen/twitch-roberta-sentiment-v1"
 LOCAL_DIR = "models/twitch-sentiment-v2"  # local filepath for model
-DB_PATH = "twitch_data.db"
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "twitch_data.db")
 
 TARGET_SCOPES = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 

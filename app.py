@@ -11,7 +11,8 @@ st.set_page_config(layout="wide", page_title="Twitch Sentiment")
 st.title("Twitch Sentiment Engine")
 
 # Config
-from primary import DB_PATH
+# from primary import DB_PATH
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "twitch_data.db")
 WINDOW_SECONDS = 2  # window of time to look at chat messages
 
 # Session State
@@ -26,38 +27,35 @@ if "current_channel" not in st.session_state:
 # Sidebar (Connection Area)
 with st.sidebar:
     st.header("Connection")
-    channel_input = st.text_input("Channel Name", placeholder="xQc")
+    with st.form("connect_form"):
+        channel_input = st.text_input("Channel Name", placeholder="xQc")
+        submitted = st.form_submit_button("Connect")
+        if submitted:
+            if st.session_state.process is None:
+                # Clear old CSV data so graph starts fresh
+                if os.path.exists(DB_PATH):
+                    os.remove(DB_PATH)
 
-    # 'Connect' Button
-    if st.button("Connect"):
-        if st.session_state.process is None:
-            # Clear old CSV data so graph starts fresh
-            if os.path.exists(DB_PATH):
-                os.remove(DB_PATH)
+                # Launch 'run.py' in the background
+                # sys.executable guarantees we use the same Python venv
+                cmd = [sys.executable, "run.py", "--channel", channel_input]
+                p = subprocess.Popen(cmd)
 
-            # Launch 'run.py' in the background
-            # sys.executable guarantees we use the same Python venv
-            cmd = [sys.executable, "run.py", "--channel", channel_input]
-            p = subprocess.Popen(cmd)
-
-            # 3. Save state
-            st.session_state.process = p
-            st.session_state.connected = True
-            st.session_state.current_channel = channel_input
-            st.success(f"Connected to {channel_input}!")
-        else:
-            st.warning("Model already running. Disconnect first.")
+                # 3. Save state
+                st.session_state.process = p
+                st.session_state.connected = True
+                st.session_state.current_channel = channel_input
+                st.success(f"Connected to {channel_input}!")
+            else:
+                st.warning("Model already running. Disconnect first.")
 
     # Disconnect Button
     if st.button("Stop / Disconnect"):
         if st.session_state.process:
-            st.session_state.connected = False
-            # Kill the background process
             st.session_state.process.terminate()
             st.session_state.process = None
+            st.session_state.connected = False
             st.session_state.current_channel = ""
-            st.rerun()
-            st.info("Stopped.")
 
     # Disclaimer
     st.sidebar.warning("Note: Multiple simultaneous users may cause mixed results.")

@@ -176,6 +176,8 @@ cython_debug/
 data/
 *.csv
 *.db
+*.db-shm
+*.db-wal
 
 
 # Model files

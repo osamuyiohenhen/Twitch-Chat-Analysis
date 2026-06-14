@@ -359,6 +359,10 @@ cython_debug/
 # Data files
 data/
 *.csv
+*.db
+*.db-shm
+*.db-wal
+
 
 # Model files
 models/

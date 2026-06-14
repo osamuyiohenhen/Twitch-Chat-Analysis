@@ -78,16 +78,16 @@ with col2:
 def update_dashboard():
     if st.session_state.connected:
         status_area.subheader(f"Monitoring: {st.session_state.current_channel}")
-            
+
         if os.path.exists(DB_PATH):
             try:
                 # 1. Ask SQLite for ONLY the last 2 seconds of data
                 cutoff_time = time.time() - WINDOW_SECONDS
                 conn = sqlite3.connect(DB_PATH)
                 df = pd.read_sql_query(
-                    "SELECT * FROM chat_log WHERE timestamp > ?", 
-                    conn, 
-                    params=(cutoff_time,)
+                    "SELECT * FROM chat_log WHERE timestamp > ?",
+                    conn,
+                    params=(cutoff_time,),
                 )
                 conn.close()
             except Exception as e:
@@ -121,14 +121,14 @@ def update_dashboard():
                     label=f"Avg Sentiment ({count} msgs)",
                     value=f"{'Positive' if avg_pos > avg_neg else 'Negative'}",
                 )
-                
+
                 # Build Graph (Plotly for colors, fixed axis, and smooth transitions)
                 fig = go.Figure(
                     data=[
                         go.Bar(
                             x=["Positive", "Negative"],
                             y=[avg_pos, avg_neg],
-                            marker_color=["#00CC96", "#EF553B"], # Green and Red
+                            marker_color=["#00CC96", "#EF553B"],  # Green and Red
                         )
                     ]
                 )
@@ -137,7 +137,10 @@ def update_dashboard():
                     yaxis_range=[0, 1],
                     height=400,
                     margin=dict(t=10, b=10),
-                    transition={"duration": 500, "easing": "linear"}, # Matches the session fragment refresh
+                    transition={
+                        "duration": 500,
+                        "easing": "linear",
+                    },  # Matches the session fragment refresh
                 )
 
                 # Render
@@ -151,8 +154,10 @@ def update_dashboard():
 
                 # Color code based on sentiment
                 sentiment_color = (
-                    "🟢" if label.lower() == "positive"
-                    else "🔴" if label.lower() == "negative"
+                    "🟢"
+                    if label.lower() == "positive"
+                    else "🔴"
+                    if label.lower() == "negative"
                     else "⚪"
                 )
 

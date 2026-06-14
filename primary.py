@@ -48,6 +48,7 @@ def load_model():
         print(f"Error loading model: {e}")
         return None
 
+
 async def init_db():
     """Run this once to set up the table and WAL mode."""
     async with aiosqlite.connect(DB_PATH) as db:
@@ -66,6 +67,7 @@ async def init_db():
         # WAL mode allows Streamlit to read while this script is writing
         await db.execute("PRAGMA journal_mode=WAL")
         await db.commit()
+
 
 async def on_message(msg: ChatMessage):
     """Twitch chat event handler. Filter and queue valid messages."""
@@ -102,15 +104,15 @@ async def writer_worker():
     while True:
         channel, text, sentiment = await results_queue.get()
         label, score, latency = sentiment
-        
+
         # Write directly to the DB
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute(
-                "INSERT INTO chat_log VALUES (?, ?, ?, ?, ?, ?)", 
-                [time.time(), channel, text, label, score, latency]
+                "INSERT INTO chat_log VALUES (?, ?, ?, ?, ?, ?)",
+                [time.time(), channel, text, label, score, latency],
             )
             await db.commit()
-            
+
         results_queue.task_done()
 
 

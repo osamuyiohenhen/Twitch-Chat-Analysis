@@ -379,3 +379,6 @@ checkpoint-*/
 # Twitch Auth Tokens
 token.json
 creds/
+
+# Lock files
+*.lock

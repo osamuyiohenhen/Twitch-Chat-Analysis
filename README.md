@@ -6,7 +6,7 @@
 ![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Transformers-yellow)
 ![License](https://img.shields.io/badge/License-Apache%202.0-green)
 
-### [Live Demo](https://huggingface.co/spaces/muyihenhen/twitch-chat-sentiment-engine)
+### [Click for Live Demo](https://muyihenhen-twitch-chat-sentiment-engine.hf.space)
 > **Note:** If the app appears unresponsive, please refresh the page to reconnect.
 
 ### Demo
@@ -54,7 +54,7 @@ Training is compute-heavy, but cloud inference APIs are too slow for real-time c
 - **Language:** Python 3.10+
 - **ML:** PyTorch, Hugging Face Transformers
 - **Async:** `asyncio`, `aiofiles`, `aiocsv`
-- **Dashboard:** Streamlit, Plotly
+- **Dashboard:** Streamlit, Plotly, HTML/JS
 - **API:** `twitchAPI` (OAuth2)
 - **DevOps:** GitHub Actions, Ruff
 

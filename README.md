@@ -53,7 +53,7 @@ Training is compute-heavy, but cloud inference APIs are too slow for real-time c
 - **Language:** Python 3.10+
 - **ML:** PyTorch, Hugging Face Transformers
 - **Async:** `asyncio`, `aiofiles`, `aiocsv`
-- **Dashboard:** Streamlit, Plotly
+- **Dashboard:** Streamlit, Plotly, HTML/JS
 - **API:** `twitchAPI` (OAuth2)
 - **DevOps:** GitHub Actions, Ruff
 

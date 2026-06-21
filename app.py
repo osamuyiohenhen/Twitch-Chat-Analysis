@@ -44,11 +44,16 @@ if not st.session_state.seen_intro:
         **Getting Started:**
         1. Enter a Twitch channel name and click Connect.
         2. You'll see 2 live sentiment bars (Positive and Negative) every moment as chats come in.
-        3. After about 30 seconds, a timeline will appear below showing chat activity broken down by positive, neutral, and negative messages per minute.
+        3. After about 30 seconds, a timeline will appear below showing chat activity broken down by positive, neutral, and negative messages per minute. This represents the ratio of positive and negative chats at the current moment.
         4. Double-click any bar on the timeline to open a link to that moment in the VOD.
         
-        ⚠️ **Note:** If the page becomes unresponsive or turns white: 1) Reload the page, 2) Click "Force Disconnect" in the sidebar, then reconnect.
+        ⚠️ **Note:** *If the page becomes unresponsive or turns white: 1) Reload the page, 2) Click "Force Disconnect" in the sidebar, then reconnect.
+                    
+        ---
+        
+        *This is an early-stage passion project, built and maintained by one person. Expect some rough edges — feedback and bug reports are always welcome.*
         """)
+
         if st.button("Got it"):
             st.session_state.seen_intro = True
             st.rerun()
@@ -62,7 +67,9 @@ with st.sidebar:
         submitted = st.form_submit_button("Connect")
         if submitted:
             if os.path.exists(LOCK_FILE):
-                st.warning("A session appears to already be running (possibly from a crashed page).Click 'Force Disconnect' below if this is incorrect.")
+                st.warning(
+                    "A session appears to already be running (possibly from a crashed page).Click 'Force Disconnect' below if this is incorrect."
+                )
             elif st.session_state.process is None:
                 # Clear old CSV data so graph starts fresh
                 if os.path.exists(DB_PATH):
@@ -100,6 +107,7 @@ with st.sidebar:
                 with open(LOCK_FILE) as f:
                     old_pid = int(f.read().strip())
                 import signal
+
                 os.kill(old_pid, signal.SIGTERM)
             except Exception:
                 pass  # process might already be dead
@@ -345,8 +353,9 @@ def session_timeline():
             )
 
             totals = df_timeline[["pos_count", "neu_count", "neg_count"]].sum(axis=1)
-            y_cap = np.percentile(totals, 95) * 1.15  # cap slightly above the 95th percentile, not the absolute max
-
+            y_cap = (
+                np.percentile(totals, 95) * 1.15
+            )  # cap slightly above the 95th percentile, not the absolute max
 
             fig.update_layout(
                 yaxis=dict(fixedrange=True),
@@ -359,8 +368,8 @@ def session_timeline():
                 height=300,
                 margin=dict(t=40, b=10),
                 xaxis=dict(
-                tickmode="auto",
-                nticks=20,
+                    tickmode="auto",
+                    nticks=20,
                 ),
             )
 
@@ -372,14 +381,21 @@ def session_timeline():
                 selection_mode="points",
                 key="timeline_chart",
                 config={
-                "modeBarButtonsToRemove": ["zoomIn2d", "zoomOut2d", "resetScale2d", ],
-                "scrollZoom": False,
-                }
+                    "modeBarButtonsToRemove": [
+                        "zoomIn2d",
+                        "zoomOut2d",
+                        "resetScale2d",
+                    ],
+                    "scrollZoom": False,
+                },
             )
 
             # Show VOD link if one was set by the callback
             if st.session_state.get("pending_vod_url"):
-                st.link_button(f"🎬 Open VOD at {st.session_state.pending_vod_time}", st.session_state.pending_vod_url) # noqa
+                st.link_button(
+                    f"🎬 Open VOD at {st.session_state.pending_vod_time}",
+                    st.session_state.pending_vod_url,
+                )  # noqa
 
 
 # Run the fragments

@@ -1,5 +1,5 @@
 from twitchAPI.chat import Chat, ChatMessage
-from twitchAPI.type import AuthScope, ChatEvent, VideoType
+from twitchAPI.type import AuthScope, ChatEvent, VideoType, SortMethod
 from twitchAPI.twitch import Twitch
 import asyncio
 import os
@@ -72,7 +72,7 @@ async def get_session_info(twitch, channel_name):
         return None, None
 
     vod_id = None
-    async for video in twitch.get_videos(user_id=user_id, video_type=VideoType.ARCHIVE):
+    async for video in twitch.get_videos(user_id=user_id, video_type=VideoType.ARCHIVE, sort=SortMethod.TIME):
         vod_id = video.id
         break
 

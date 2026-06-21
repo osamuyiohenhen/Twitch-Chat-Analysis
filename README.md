@@ -5,7 +5,7 @@
 ![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Transformers-yellow)
 ![License](https://img.shields.io/badge/License-Apache%202.0-green)
 
-### [Live Demo](https://huggingface.co/spaces/muyihenhen/twitch-chat-sentiment-engine)
+### [Live Demo](https://muyihenhen-twitch-chat-sentiment-engine.hf.space)
 > **Note:** If the app appears unresponsive, please refresh the page to reconnect.
 
 ### Demo

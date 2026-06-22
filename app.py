@@ -131,8 +131,8 @@ with col2:
     metric_placeholder = st.empty()
 
 
-# This fragment only runs update_dashboard every 0.2s
-@st.fragment(run_every=0.2)
+# This fragment only runs update_dashboard every 0.4s
+@st.fragment(run_every=0.4)
 def update_dashboard():
     if st.session_state.connected:
         status_area.subheader(
@@ -214,13 +214,13 @@ def update_dashboard():
                         ">
                             <div style="display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; width: 250px;">
                                 <div style="color: var(--text-color); font-weight: bold; font-size: 18px; margin-bottom: 10px;">{pos_percent}%</div>
-                                <div style="background-color: #00CC96; width: 100%; height: {pos_percent}%; border-radius: 6px 6px 0 0; transition: height 0.2s ease-in-out; box-shadow: 0 4px 16px rgba(0,204,150,0.2);"></div>
+                                <div style="background-color: #00CC96; width: 100%; height: {pos_percent}%; border-radius: 6px 6px 0 0; transition: height 0.4s ease-in-out; box-shadow: 0 4px 16px rgba(0,204,150,0.2);"></div>
                                 <div style="color: var(--text-color); font-size: 15px; font-weight: 500; margin-top: 14px;">Positive</div>
                             </div>
                             
                             <div style="display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; width: 250px;">
                                 <div style="color: var(--text-color); font-weight: bold; font-size: 18px; margin-bottom: 10px;">{neg_percent}%</div>
-                                <div style="background-color: #EF553B; width: 100%; height: {neg_percent}%; border-radius: 6px 6px 0 0; transition: height 0.2s ease-in-out; box-shadow: 0 4px 16px rgba(239,85,59,0.2);"></div>
+                                <div style="background-color: #EF553B; width: 100%; height: {neg_percent}%; border-radius: 6px 6px 0 0; transition: height 0.4s ease-in-out; box-shadow: 0 4px 16px rgba(239,85,59,0.2);"></div>
                                 <div style="color: var(--text-color); font-size: 15px; font-weight: 500; margin-top: 14px;">Negative</div>
                             </div>
                         </div>

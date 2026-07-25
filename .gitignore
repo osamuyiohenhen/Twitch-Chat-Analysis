@@ -179,6 +179,9 @@ data/
 *.db-shm
 *.db-wal
 
+# Experimental files
+feeder.py
+get_token.py
 
 # Model files
 models/
@@ -198,3 +201,6 @@ creds/
 
 # Lock files
 *.lock
+
+# Launch configurations and settings
+.vscode/

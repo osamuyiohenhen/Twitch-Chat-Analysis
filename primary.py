@@ -22,7 +22,7 @@ HF_REPO = "muyihenhen/twitch-roberta-sentiment-v1"
 LOCAL_DIR = "models/twitch-sentiment-v2"  # local filepath for model
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "twitch_data.db")
 
-TARGET_SCOPES = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
+TARGET_SCOPES = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT, AuthScope.CHANNEL_BOT]
 
 
 class ListDataset(Dataset):
@@ -34,6 +34,40 @@ class ListDataset(Dataset):
 
     def __getitem__(self, i):
         return self.original_list[i]
+
+
+async def user_auth_refresh_callback(token: str, refresh_token: str):
+    """Callback function triggered when Twitch tokens are automatically refreshed."""
+    print("Twitch token refresh: Updating config and .env...")
+
+    # Update config in memory
+    config.user_token = token
+    config.refresh_token = refresh_token
+
+    # Update .env file
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+
+            new_lines = []
+            for line in lines:
+                stripped = line.strip()
+                if stripped.startswith("TWITCH_USER_TOKEN="):
+                    new_lines.append(f'TWITCH_USER_TOKEN="{token}"\n')
+                elif stripped.startswith("TWITCH_REFRESH_TOKEN="):
+                    new_lines.append(f'TWITCH_REFRESH_TOKEN="{refresh_token}"\n')
+                else:
+                    new_lines.append(line)
+
+            with open(env_path, "w", encoding="utf-8") as f:
+                f.writelines(new_lines)
+            print("Successfully saved refreshed tokens to .env!")
+        except Exception as e:
+            print(f"Error saving refreshed tokens to .env: {e}")
+    else:
+        print(".env file not found. Refreshed tokens only updated in memory.")
 
 
 def load_model():
@@ -235,9 +269,31 @@ async def run_backend_async(target_channel, loaded_classifier):
     twitch = await Twitch(
         config.client_id, config.client_secret, authenticate_app=False
     )
-    await twitch.set_user_authentication(
-        config.user_token, TARGET_SCOPES, config.refresh_token
-    )
+
+    twitch.user_auth_refresh_callback = user_auth_refresh_callback
+
+    try:
+        await twitch.set_user_authentication(
+            config.user_token, TARGET_SCOPES, config.refresh_token
+        )
+    except Exception as e:
+        print(f"\n[!] Existing tokens are invalid or expired ({e}).")
+        print(
+            "[*] Launching browser for automatic interactive Twitch authentication..."
+        )
+
+        from twitchAPI.oauth import UserAuthenticator
+
+        auth = UserAuthenticator(twitch, TARGET_SCOPES)
+
+        try:
+            token, refresh_token = await auth.authenticate()
+            await user_auth_refresh_callback(token, refresh_token)
+            await twitch.set_user_authentication(token, TARGET_SCOPES, refresh_token)
+            print("[+] Successfully authenticated and updated .env with new tokens\n")
+        except Exception as auth_err:
+            print(f"[!] Interactive authentication failed: {auth_err}")
+            return
 
     user_id, vod_id, stream_start = await get_session_info(twitch, target_channel)
     async with aiosqlite.connect(DB_PATH) as db:

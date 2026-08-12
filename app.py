@@ -51,7 +51,7 @@ if not st.session_state.seen_intro:
                     
         ---
         
-        *This is an early-stage passion project, built and maintained by one person. Expect some rough edges — feedback and bug reports are always welcome.*
+        *This is an early-stage passion project, built and maintained by one person. Expect some rough edges - feedback and bug reports are always welcome.*
         """)
 
         if st.button("Got it"):
@@ -68,7 +68,7 @@ with st.sidebar:
         if submitted:
             if os.path.exists(LOCK_FILE):
                 st.warning(
-                    "A session appears to already be running (possibly from a crashed page).Click 'Force Disconnect' below if this is incorrect."
+                    "A session appears to already be running (possibly from a crashed page). Click 'Force Disconnect' below if this is incorrect."
                 )
             elif st.session_state.process is None:
                 # Clear old CSV data so graph starts fresh

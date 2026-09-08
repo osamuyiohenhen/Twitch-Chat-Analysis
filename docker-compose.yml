@@ -1,0 +1,27 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_TYPE=dynamodb
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=DUMMYKEYIDEXAMPLE
+      - AWS_SECRET_ACCESS_KEY=DUMMYSECRETKEYEXAMPLE
+      - DYNAMODB_ENDPOINT_URL=http://dynamodb-local:8000
+      - DYNAMODB_MESSAGES_TABLE=TwitchMessages
+      - DYNAMODB_METRICS_TABLE=TwitchMetrics
+      - TWITCH_CLIENT_ID=${TWITCH_CLIENT_ID}
+      - TWITCH_CLIENT_SECRET=${TWITCH_CLIENT_SECRET}
+      - TWITCH_USER_TOKEN=${TWITCH_USER_TOKEN}
+      - TWITCH_REFRESH_TOKEN=${TWITCH_REFRESH_TOKEN}
+    depends_on:
+      - dynamodb-local
+    command: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb-local
+    ports:
+      - "8001:8000"
+    command: "-jar DynamoDBLocal.jar -inMemory -sharedDb"

@@ -5,7 +5,7 @@
 ![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Transformers-yellow)
 ![License](https://img.shields.io/badge/License-Apache%202.0-green)
 
-### [Click for Live Demo](https://muyihenhen-twitch-chat-sentiment-engine.hf.space)
+### [(WIP) Click for Live Demo](https://muyihenhen-twitch-chat-sentiment-engine.hf.space)
 > **Note:** If the app appears unresponsive, please refresh the page to reconnect.
 
 ### Demo
@@ -48,17 +48,25 @@ Training is compute-heavy, but cloud inference APIs are too slow for real-time c
 - **Inference:** CPU deployment on Hugging Face Spaces, GPU-accelerated locally on RTX 4050 using FP16 mixed precision
 - **Performance:** <60ms latency locally, ~200ms on cloud CPU
 
+---
+
+### 4. Swappable Backend & Cloud Storage
+The inference engine is decoupled from the UI via a FastAPI layer:
+- **Dual-Engine Storage:** Supports zero-dependency local development via SQLite or cloud scaling via Amazon DynamoDB (two-table design for raw logs and minute rollups).
+- **Real-Time Streaming:** Broadcasts analyzed sentiment directly to connected web clients over WebSockets.
+- **Headless Authentication:** Silent OAuth token auto-refresh with no browser popups, enabling headless container deployment.
+
 ## Tech Stack
 
 - **Language:** Python 3.10+
-- **ML:** PyTorch, Hugging Face Transformers
-- **Async:** `asyncio`, `aiofiles`, `aiocsv`
-- **Dashboard:** Streamlit, Plotly, HTML/JS
-- **API:** `twitchAPI` (OAuth2)
-- **DevOps:** GitHub Actions, Ruff
+- **Backend & APIs:** `twitchAPI`, FastAPI, Uvicorn (ASGI), WebSockets
+- **ML:** PyTorch, Hugging Face Transformers (RoBERTa)
+- **Data & Cloud Storage:** AWS DynamoDB (Boto3), SQLite (`aiosqlite`)
+- **Dashboard:** (Current) Streamlit, Plotly, HTML/JS; (WIP) React/TypeScript
+- **DevOps:** Docker, Docker Compose, GitHub Actions, Ruff
 
 
-## Getting Started
+## Getting Started Locally
 
 ### 1. Clone the Repo
 ```bash
@@ -96,37 +104,52 @@ pip install -r requirements.txt
 
 ### 5. Environment Variables
 
-Create a `.env` file in the root folder:
-```
+Create a `.env` file in the root folder with your Twitch Developer credentials:
+```env
 TWITCH_CLIENT_ID=your_twitch_client_id
 TWITCH_CLIENT_SECRET=your_twitch_client_secret
 ```
 
-**Do not commit `.env`** — Add to `.gitignore` to keep secrets safe.
+> **Note:** Never commit `.env` to Git. Keep your credentials secret.
 
-The app uses `python-dotenv` to automatically load these variables.
+### 6. Generate Twitch OAuth Tokens
 
-### 6. Run the Dashboard
+Run the interactive authorization CLI once locally:
+```bash
+python scripts/auth_twitch.py
+```
+This launches a browser window to authenticate with Twitch and automatically saves the paired `TWITCH_USER_TOKEN` and long-lived `TWITCH_REFRESH_TOKEN` to your `.env` file. Once saved, the backend operates 100% headlessly with silent auto-refresh.
 
+### 7. Run the Application
+
+#### Option A: FastAPI Backend Server (Recommended)
+```bash
+uvicorn api:app --reload --workers 1 --port 8000
+```
+Interactive Swagger API documentation will be available at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+#### Option B: Docker Compose (Local DynamoDB + FastAPI)
+```bash
+docker compose up --build
+```
+
+#### Option C: Streamlit Prototype Dashboard
 ```bash
 streamlit run app.py
 ```
 
-1. Open the sidebar and enter a Twitch channel name (e.g., `xQc`)
-2. Click "Connect"
-3. Watch real-time sentiment analysis in the dashboard
-
-(Or use `feeder.py` to test with mock data if you don't want to go live)
 
 ## Roadmap
 
-- [x] **Async Scraper:** High-throughput chat scraper
+- [x] **Async Ingestion Pipeline:** High-throughput WebSocket scraper using `twitchAPI`
 - [x] **Domain Adaptation:** MLM training on Twitch slang
-- [x] **CI/CD Pipeline:** Automated testing via GitHub Actions
-- [x] **Fine-Tuning:** Sentiment classifier on labeled data
-- [x] **Dashboard:** Streamlit UI with live sentiment tracking
-- [x] **Cloud Deployment:** Dockerized and deployed on Hugging Face Spaces
-- [ ] **Adapters:** Lightweight adapters for specific streamer communities
+- [x] **Sentiment Fine-Tuning:** Custom 3-class classifier tuned on gaming vernacular
+- [x] **Prototype Dashboard:** Streamlit UI with live sentiment tracking
+- [x] **Backend Infrastructure:** FastAPI service with REST endpoints, WebSockets, and lifespan model caching
+- [x] **Database Abstraction Layer:** Pluggable storage architecture supporting local SQLite and AWS DynamoDB
+- [x] **AWS Cloud Deployment:** Production deployment on AWS EC2 with DynamoDB tables
+- [ ] **Modern Web Frontend:** Responsive Vite + React/TypeScript dashboard with live streaming charts
+- [ ] **LoRA Adapters:** Parameter-efficient adapters tailored to specific streamer sub-communities
 
 ## Acknowledgements & License
 

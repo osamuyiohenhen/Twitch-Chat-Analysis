@@ -17,7 +17,7 @@ import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from fastapi.testclient import TestClient
-from src.db_service import SQLiteDatabaseService
+from src.db_service import SQLiteDatabaseService, get_db_service
 from api import app
 
 
@@ -127,8 +127,11 @@ class TestDatabaseService(unittest.IsolatedAsyncioTestCase):
 class TestFastAPIEndpoints(unittest.TestCase):
     """Test FastAPI REST endpoints and CORS headers."""
 
-    def setUp(self):
-        self.client = TestClient(app)
+    @classmethod
+    def setUpClass(cls):
+        asyncio.run(get_db_service().init_db())
+        cls.client = TestClient(app)
+
 
     def test_health_endpoint(self):
         response = self.client.get("/health")

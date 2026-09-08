@@ -132,7 +132,6 @@ class TestFastAPIEndpoints(unittest.TestCase):
         asyncio.run(get_db_service().init_db())
         cls.client = TestClient(app)
 
-
     def test_health_endpoint(self):
         response = self.client.get("/health")
         self.assertEqual(response.status_code, 200)
@@ -197,10 +196,14 @@ class TestHeadlessWorkerAuth(unittest.IsolatedAsyncioTestCase):
         from primary import TwitchSentimentWorker
         import config
 
-        # Temporarily clear user tokens
+        # Temporarily mock client credentials and clear user tokens
+        original_client_id = config.client_id
+        original_client_secret = config.client_secret
         original_token = config.user_token
         original_refresh = config.refresh_token
         try:
+            config.client_id = "test_client_id"
+            config.client_secret = "test_client_secret"
             config.user_token = ""
             config.refresh_token = ""
 
@@ -211,8 +214,26 @@ class TestHeadlessWorkerAuth(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Twitch user tokens missing", str(ctx.exception))
             self.assertIn("auth_twitch.py", str(ctx.exception))
         finally:
+            config.client_id = original_client_id
+            config.client_secret = original_client_secret
             config.user_token = original_token
             config.refresh_token = original_refresh
+
+    async def test_worker_fails_without_client_credentials(self):
+        """Verify worker raises an error if client credentials are missing."""
+        from primary import TwitchSentimentWorker
+        import config
+
+        original_client_id = config.client_id
+        try:
+            config.client_id = ""
+            worker = TwitchSentimentWorker("test_channel", classifier=None)
+            with self.assertRaises(RuntimeError) as ctx:
+                await worker.start()
+            self.assertIn("Twitch client credentials missing", str(ctx.exception))
+        finally:
+            config.client_id = original_client_id
+
 
 
 if __name__ == "__main__":

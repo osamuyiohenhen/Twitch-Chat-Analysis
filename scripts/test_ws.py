@@ -2,7 +2,7 @@ import asyncio
 import json
 import websockets
 
-CHANNEL = "silky"  # Change to the channel you connected in Swagger
+CHANNEL = "kaicenat"  # Change to the channel you connected in Swagger
 URL = f"ws://localhost:8000/ws/channels/{CHANNEL}"
 
 

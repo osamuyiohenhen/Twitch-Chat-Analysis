@@ -116,12 +116,36 @@ class TestDatabaseService(unittest.IsolatedAsyncioTestCase):
             avg_pos_score=0.92,
             avg_neg_score=0.81,
             total_messages=17,
+            vod_id="vod_100",
+        )
+        await self.db.save_minute_metric(
+            channel="streamer3",
+            minute_timestamp=minute_ts + 60,
+            pos_count=5,
+            neu_count=2,
+            neg_count=1,
+            avg_pos_score=0.88,
+            avg_neg_score=0.75,
+            total_messages=8,
+            vod_id="vod_200",
         )
 
-        timeline = await self.db.get_timeline_metrics("streamer3")
-        self.assertEqual(len(timeline), 1)
-        self.assertEqual(timeline[0]["total_messages"], 17)
-        self.assertEqual(timeline[0]["pos_count"], 10)
+        # Unfiltered returns both
+        all_metrics = await self.db.get_timeline_metrics("streamer3")
+        self.assertEqual(len(all_metrics), 2)
+
+        # Filtered by vod_id returns only matching
+        vod100_metrics = await self.db.get_timeline_metrics("streamer3", vod_id="vod_100")
+        self.assertEqual(len(vod100_metrics), 1)
+        self.assertEqual(vod100_metrics[0]["vod_id"], "vod_100")
+        self.assertEqual(vod100_metrics[0]["total_messages"], 17)
+
+        # Test get_channel_sessions
+        sessions = await self.db.get_channel_sessions("streamer3")
+        self.assertEqual(len(sessions), 2)
+        vod_ids = [s["vod_id"] for s in sessions]
+        self.assertIn("vod_100", vod_ids)
+        self.assertIn("vod_200", vod_ids)
 
 
 class TestFastAPIEndpoints(unittest.TestCase):
@@ -186,6 +210,24 @@ class TestFastAPIEndpoints(unittest.TestCase):
             data = websocket.receive_json()
             self.assertEqual(data.get("type"), "warning")
             self.assertIn("not running", data.get("message", ""))
+
+    def test_sessions_endpoint(self):
+        """Test GET /api/v1/channels/{channel_name}/sessions endpoint."""
+        response = self.client.get("/api/v1/channels/streamer3/sessions")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIsInstance(data, list)
+
+    def test_timeline_sentiment_with_vod_id_filter(self):
+        """Test GET /api/v1/channels/{channel_name}/sentiment/timeline with vod_id query."""
+        response = self.client.get(
+            "/api/v1/channels/streamer3/sentiment/timeline?vod_id=vod_100"
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIsInstance(data, list)
+        for item in data:
+            self.assertEqual(item.get("vod_id"), "vod_100")
 
 
 class TestHeadlessWorkerAuth(unittest.IsolatedAsyncioTestCase):

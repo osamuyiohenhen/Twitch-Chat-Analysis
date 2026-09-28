@@ -5,6 +5,7 @@ import type {
   HealthResponse,
   RealtimeMetrics,
   SocketStatus,
+  StreamSessionItem,
   TimelineMetricItem,
 } from '../types/sentiment';
 
@@ -23,6 +24,11 @@ export const useSentimentStore = defineStore('sentiment', {
     // Stream & VOD metadata
     vodId: null as string | null,
     streamStart: null as number | null,
+
+    // Session History & Queries
+    availableSessions: [] as StreamSessionItem[],
+    selectedSessionVodId: null as string | null,
+    selectedPointVodId: null as string | null,
 
     // Live Metrics & Smoothed Bars (0.0 to 1.0)
     metrics: null as RealtimeMetrics | null,
@@ -100,6 +106,11 @@ export const useSentimentStore = defineStore('sentiment', {
     totalCount: (state) => state.sessionMessageCount,
 
     isDark: (state) => state.theme === 'dark',
+
+    currentSessionInfo: (state) => {
+      if (!state.selectedSessionVodId) return null;
+      return state.availableSessions.find((s) => s.vod_id === state.selectedSessionVodId) || null;
+    },
   },
 
   actions: {
@@ -194,23 +205,31 @@ export const useSentimentStore = defineStore('sentiment', {
         this.latestMessage = null;
         this.selectedMinuteLabel = null;
         this.pendingVodUrl = null;
+        this.selectedPointVodId = null;
+        this.availableSessions = [];
+        this.selectedSessionVodId = null;
         this.timeline = [];
 
         // 2. Fetch channel status (stream_start, vod_id)
-        this.fetchChannelStatus(channel);
+        await this.fetchChannelStatus(channel);
 
-        // 3. Load timeline history immediately
-        this.refreshTimeline(channel);
+        // 3. Fetch past sessions
+        await this.fetchSessions(channel);
 
-        // Poll timeline every 10 seconds for fast responsive updates
+        // 4. Load timeline history immediately
+        await this.refreshTimeline(channel);
+
+        // Poll timeline & sessions every 10 seconds for fast responsive updates
         if (this._timelineTimer) clearInterval(this._timelineTimer);
         this._timelineTimer = window.setInterval(() => {
           if (this.isConnected && this.currentChannel) {
             this.refreshTimeline(this.currentChannel);
+            // Also refresh sessions list in case new stream/vod is registered
+            this.fetchSessions(this.currentChannel);
           }
         }, 10000);
 
-        // 4. Connect WebSocket for 4-5 fps live streaming
+        // 5. Connect WebSocket for 4-5 fps live streaming
         this.openWebSocket(channel);
       } catch (err: any) {
         this.isConnecting = false;
@@ -229,10 +248,46 @@ export const useSentimentStore = defineStore('sentiment', {
       }
     },
 
-    async refreshTimeline(channel: string) {
+    async fetchSessions(channel?: string) {
+      const ch = channel || this.currentChannel;
+      if (!ch) return;
       try {
-        const items = await api.getTimeline(channel, 60);
-        if (items && items.length > 0) {
+        const sessions = await api.getSessions(ch);
+        this.availableSessions = sessions || [];
+      } catch {
+        // Ignore
+      }
+    },
+
+    selectSession(vodId: string | null) {
+      this.selectedSessionVodId = vodId;
+      this.selectedMinuteLabel = null;
+      this.pendingVodUrl = null;
+      this.selectedPointVodId = null;
+      if (this.currentChannel) {
+        this.refreshTimeline(this.currentChannel);
+      }
+    },
+
+    async refreshTimeline(channel?: string) {
+      const ch = channel || this.currentChannel;
+      if (!ch) return;
+      try {
+        let items: TimelineMetricItem[] = [];
+        if (this.selectedSessionVodId) {
+          // Historical session filter
+          items = await api.getTimeline(ch, null, null, this.selectedSessionVodId);
+        } else {
+          // Live session filter: only show current stream
+          if (this.vodId) {
+            items = await api.getTimeline(ch, null, null, this.vodId);
+          } else if (this.streamStart && this.streamStart > 0) {
+            items = await api.getTimeline(ch, this.streamStart, null, null);
+          } else {
+            items = await api.getTimeline(ch);
+          }
+        }
+        if (items) {
           this.timeline = items;
         }
       } catch {
@@ -338,10 +393,12 @@ export const useSentimentStore = defineStore('sentiment', {
       }
     },
 
-    selectTimelinePoint(timeLabel: string, totalMinutes: number) {
+    selectTimelinePoint(timeLabel: string, totalMinutes: number, itemVodId?: string | null) {
       this.selectedMinuteLabel = timeLabel;
-      if (this.vodId) {
-        this.pendingVodUrl = `https://twitch.tv/videos/${this.vodId}?t=${totalMinutes}m0s`;
+      const targetVodId = itemVodId || this.selectedSessionVodId || this.vodId;
+      this.selectedPointVodId = targetVodId;
+      if (targetVodId) {
+        this.pendingVodUrl = `https://twitch.tv/videos/${targetVodId}?t=${totalMinutes}m0s`;
       } else {
         this.pendingVodUrl = `https://twitch.tv/${this.currentChannel}`;
       }

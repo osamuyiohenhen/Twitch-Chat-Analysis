@@ -3,6 +3,7 @@ import type {
   ChatMessage,
   HealthResponse,
   RealtimeMetrics,
+  StreamSessionItem,
   TimelineMetricItem,
 } from '../types/sentiment';
 
@@ -49,11 +50,29 @@ export const api = {
     return handleResponse<RealtimeMetrics>(res);
   },
 
-  async getTimeline(channel: string, limit = 60): Promise<TimelineMetricItem[]> {
+  async getTimeline(
+    channel: string,
+    startTs?: number | null,
+    endTs?: number | null,
+    vodId?: string | null
+  ): Promise<TimelineMetricItem[]> {
+    const params = new URLSearchParams();
+    if (startTs !== undefined && startTs !== null) params.append('start_ts', startTs.toString());
+    if (endTs !== undefined && endTs !== null) params.append('end_ts', endTs.toString());
+    if (vodId) params.append('vod_id', vodId);
+
+    const qs = params.toString() ? `?${params.toString()}` : '';
     const res = await fetch(
-      `${API_BASE}/api/v1/channels/${encodeURIComponent(channel)}/sentiment/timeline?limit=${limit}`
+      `${API_BASE}/api/v1/channels/${encodeURIComponent(channel)}/sentiment/timeline${qs}`
     );
     return handleResponse<TimelineMetricItem[]>(res);
+  },
+
+  async getSessions(channel: string): Promise<StreamSessionItem[]> {
+    const res = await fetch(
+      `${API_BASE}/api/v1/channels/${encodeURIComponent(channel)}/sessions`
+    );
+    return handleResponse<StreamSessionItem[]>(res);
   },
 
   async getHistoricalMessages(channel: string, limit = 50, sentiment = 'all'): Promise<ChatMessage[]> {

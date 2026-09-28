@@ -56,26 +56,50 @@ The inference engine is decoupled from the UI via a FastAPI layer:
 - **Real-Time Streaming:** Broadcasts analyzed sentiment directly to connected web clients over WebSockets.
 - **Headless Authentication:** Silent OAuth token auto-refresh with no browser popups, enabling headless container deployment.
 
+## Project Structure
+
+```text
+Twitch-Chat-Analysis/
+├── backend/                   # FastAPI backend, async workers & ML pipeline
+│   ├── api.py                 # REST API endpoints and WebSocket gateway
+│   ├── primary.py             # TwitchSentimentWorker & chat stream consumer
+│   ├── run.py                 # Development server entry point
+│   ├── config.py              # Environment configuration & constants
+│   ├── src/
+│   │   ├── db_service.py      # Abstracted SQLite and AWS DynamoDB layers
+│   │   ├── utils/             # Hugging Face model loader & cache
+│   │   └── training/          # MLM pre-training & fine-tuning scripts
+│   ├── scripts/               # Twitch OAuth CLI & test scripts
+│   └── tests/                 # Unit & integration test suite
+├── frontend/                  # Vue 3 + TypeScript + Vite web dashboard
+│   ├── src/
+│   │   ├── components/        # Live sentiment bars, activity timeline, sidebar
+│   │   ├── stores/            # Pinia global reactive state (WebSocket stream)
+│   │   ├── services/          # REST and WebSocket client
+│   │   └── types/             # TypeScript schemas & sentiment definitions
+│   └── README.md              # In-depth frontend guide & architecture overview
+└── README.md                  # Project overview & quickstart
+```
+
 ## Tech Stack
 
-- **Language:** Python 3.10+
-- **Backend & APIs:** `twitchAPI`, FastAPI, Uvicorn (ASGI), WebSockets
-- **ML:** PyTorch, Hugging Face Transformers (RoBERTa)
+- **Language:** Python 3.10+, TypeScript 5+
+- **Backend & APIs:** FastAPI, Uvicorn (ASGI), WebSockets, `twitchAPI`
+- **ML & NLP:** PyTorch (GPU / CPU), Hugging Face Transformers (Custom RoBERTa)
 - **Data & Cloud Storage:** AWS DynamoDB (Boto3), SQLite (`aiosqlite`)
-- **Dashboard:** (Current) Streamlit, Plotly, HTML/JS; (WIP) React/TypeScript
-- **DevOps:** Docker, Docker Compose, GitHub Actions, Ruff
+- **Frontend Dashboard:** Vue 3 (Composition API), Vite, Tailwind CSS, Pinia, Chart.js (`vue-chartjs`), Lucide Icons
+- **DevOps & Testing:** Docker, Docker Compose, GitHub Actions, Python `unittest`
 
 
 ## Getting Started Locally
 
 ### 1. Clone the Repo
 ```bash
-git clone [https://github.com/osamuyiohenhen/Twitch-Chat-Analysis.git](https://github.com/osamuyiohenhen/Twitch-Chat-Analysis.git)
+git clone https://github.com/osamuyiohenhen/Twitch-Chat-Analysis.git
 cd Twitch-Chat-Analysis
 ```
 
-### 2. Set up the Environment
-Create a virtual environment to keep dependencies clean.
+### 2. Set up Python Environment
 ```bash
 python -m venv .venv
 # Windows
@@ -84,71 +108,72 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install PyTorch
-
-If you have an NVIDIA GPU, considering installing CUDA-enabled PyTorch first to have improved inference performance:
+### 3. Install PyTorch & Backend Dependencies
+For NVIDIA GPUs (CUDA acceleration):
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu126
 ```
-
-If you do not have one, you must install the CPU-only version of PyTorch:
-
+For CPU-only environments:
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 ```
-
-### 4. Install Dependencies
+Install backend requirements:
 ```bash
+cd backend
 pip install -r requirements.txt
 ```
 
-### 5. Environment Variables
-
-Create a `.env` file in the root folder with your Twitch Developer credentials:
+### 4. Configure Environment Variables
+Create a `.env` file in `backend/` (or repository root) with your Twitch Developer credentials:
 ```env
 TWITCH_CLIENT_ID=your_twitch_client_id
 TWITCH_CLIENT_SECRET=your_twitch_client_secret
 ```
 
-> **Note:** Never commit `.env` to Git. Keep your credentials secret.
-
-### 6. Generate Twitch OAuth Tokens
-
+### 5. Generate Twitch OAuth Tokens
 Run the interactive authorization CLI once locally:
 ```bash
 python scripts/auth_twitch.py
 ```
-This launches a browser window to authenticate with Twitch and automatically saves the paired `TWITCH_USER_TOKEN` and long-lived `TWITCH_REFRESH_TOKEN` to your `.env` file. Once saved, the backend operates 100% headlessly with silent auto-refresh.
+This launches a browser window to authenticate with Twitch and automatically saves the paired `TWITCH_USER_TOKEN` and long-lived `TWITCH_REFRESH_TOKEN` to your `.env` file for silent auto-refresh.
 
-### 7. Run the Application
+---
 
-#### Option A: FastAPI Backend Server (Recommended)
+### 6. Run the Application
+
+#### Step A: Start the FastAPI Backend
 ```bash
-uvicorn api:app --reload --workers 1 --port 8000
+cd backend
+python run.py
 ```
-Interactive Swagger API documentation will be available at [http://localhost:8000/docs](http://localhost:8000/docs).
+*API runs at `http://localhost:8000`. Interactive Swagger docs available at [http://localhost:8000/docs](http://localhost:8000/docs).*
 
-#### Option B: Docker Compose (Local DynamoDB + FastAPI)
+#### Step B: Start the Vue 3 Frontend
+Open a separate terminal window:
 ```bash
-docker compose up --build
+cd frontend
+npm install
+npm run dev
 ```
+*Frontend runs at `http://localhost:5173` with instant hot-module replacement (HMR).*
 
-#### Option C: Streamlit Prototype Dashboard
+#### Running Backend Tests
 ```bash
-streamlit run app.py
+cd backend
+python -m unittest discover -s tests
 ```
 
+---
 
 ## Roadmap
 
 - [x] **Async Ingestion Pipeline:** High-throughput WebSocket scraper using `twitchAPI`
 - [x] **Domain Adaptation:** MLM training on Twitch slang
 - [x] **Sentiment Fine-Tuning:** Custom 3-class classifier tuned on gaming vernacular
-- [x] **Prototype Dashboard:** Streamlit UI with live sentiment tracking
 - [x] **Backend Infrastructure:** FastAPI service with REST endpoints, WebSockets, and lifespan model caching
 - [x] **Database Abstraction Layer:** Pluggable storage architecture supporting local SQLite and AWS DynamoDB
 - [x] **AWS Cloud Deployment:** Production deployment on AWS EC2 with DynamoDB tables
-- [ ] **Modern Web Frontend:** Responsive Vite + React/TypeScript dashboard with live streaming charts
+- [x] **Modern Web Frontend:** Responsive Vue 3 + TypeScript dashboard with live streaming charts, activity timeline, and VOD timestamp deep-linking
 - [ ] **LoRA Adapters:** Parameter-efficient adapters tailored to specific streamer sub-communities
 
 ## Acknowledgements & License

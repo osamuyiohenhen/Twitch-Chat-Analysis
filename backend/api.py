@@ -157,6 +157,15 @@ class TimelineMetricItem(BaseModel):
     avg_pos_score: float
     avg_neg_score: float
     total_messages: int
+    vod_id: Optional[str] = None
+
+
+class StreamSessionItem(BaseModel):
+    vod_id: str
+    first_minute: int
+    last_minute: int
+    total_messages: int
+    stream_start_time: Optional[float] = None
 
 
 # --- Helper Functions for State Access ---
@@ -325,6 +334,9 @@ async def get_timeline_sentiment(
     end_ts: Optional[float] = Query(
         None, description="End timestamp filter (Unix seconds)"
     ),
+    vod_id: Optional[str] = Query(
+        None, description="Optional VOD ID filter"
+    ),
 ):
     """
     Get minute-by-minute historical sentiment metrics for timeline charts.
@@ -332,9 +344,24 @@ async def get_timeline_sentiment(
     channel = channel_name.lower().strip()
     db_service: BaseDatabaseService = get_current_db_service()
     metrics = await db_service.get_timeline_metrics(
-        channel, start_ts=start_ts, end_ts=end_ts
+        channel, start_ts=start_ts, end_ts=end_ts, vod_id=vod_id
     )
     return metrics
+
+
+@app.get(
+    "/api/v1/channels/{channel_name}/sessions",
+    response_model=List[StreamSessionItem],
+    tags=["Sentiment Analytics"],
+)
+async def get_channel_sessions(channel_name: str):
+    """
+    Get recorded stream sessions and VODs for a channel.
+    """
+    channel = channel_name.lower().strip()
+    db_service: BaseDatabaseService = get_current_db_service()
+    sessions = await db_service.get_channel_sessions(channel)
+    return sessions
 
 
 @app.get(

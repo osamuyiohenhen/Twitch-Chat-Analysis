@@ -31,6 +31,15 @@ export interface TimelineMetricItem {
   avg_pos_score: number;
   avg_neg_score: number;
   total_messages: number;
+  vod_id?: string | null;
+}
+
+export interface StreamSessionItem {
+  vod_id: string;
+  first_minute: number;
+  last_minute: number;
+  total_messages: number;
+  stream_start_time?: number | null;
 }
 
 export interface ChannelStatus {

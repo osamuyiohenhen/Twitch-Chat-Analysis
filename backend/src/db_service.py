@@ -39,6 +39,7 @@ class BaseDatabaseService(abc.ABC):
         vod_id: str,
         stream_start: Optional[float],
         session_time: float,
+        channel: Optional[str] = None,
     ) -> None:
         """Save broadcaster stream session metadata."""
         pass
@@ -54,6 +55,7 @@ class BaseDatabaseService(abc.ABC):
         avg_pos_score: float,
         avg_neg_score: float,
         total_messages: int,
+        vod_id: Optional[str] = None,
     ) -> None:
         """Save aggregated minute-by-minute metrics."""
         pass
@@ -71,8 +73,17 @@ class BaseDatabaseService(abc.ABC):
         channel: str,
         start_ts: Optional[float] = None,
         end_ts: Optional[float] = None,
+        vod_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Fetch historical minute metrics for timeline visualizations."""
+        pass
+
+    @abc.abstractmethod
+    async def get_channel_sessions(
+        self,
+        channel: str,
+    ) -> List[Dict[str, Any]]:
+        """Fetch past stream sessions and recorded VODs for a channel."""
         pass
 
     @abc.abstractmethod
@@ -120,9 +131,14 @@ class SQLiteDatabaseService(BaseDatabaseService):
                     user_id TEXT,
                     vod_id TEXT,
                     stream_start_time REAL,
-                    monitor_start_time REAL
+                    monitor_start_time REAL,
+                    channel TEXT
                 )
             """)
+            try:
+                await db.execute("ALTER TABLE session_info ADD COLUMN channel TEXT")
+            except Exception:
+                pass
 
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS chat_metrics (
@@ -134,9 +150,14 @@ class SQLiteDatabaseService(BaseDatabaseService):
                     avg_pos_score REAL,
                     avg_neg_score REAL,
                     total_messages INTEGER,
+                    vod_id TEXT,
                     PRIMARY KEY (channel, minute_timestamp)
                 )
             """)
+            try:
+                await db.execute("ALTER TABLE chat_metrics ADD COLUMN vod_id TEXT")
+            except Exception:
+                pass
             await db.commit()
 
     async def save_messages(self, rows: List[Dict[str, Any]]) -> None:
@@ -167,12 +188,13 @@ class SQLiteDatabaseService(BaseDatabaseService):
         vod_id: str,
         stream_start: Optional[float],
         session_time: float,
+        channel: Optional[str] = None,
     ) -> None:
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("PRAGMA busy_timeout = 5000")
             await db.execute(
-                "INSERT INTO session_info (user_id, vod_id, stream_start_time, monitor_start_time) VALUES (?, ?, ?, ?)",
-                (user_id, vod_id, stream_start, session_time),
+                "INSERT INTO session_info (user_id, vod_id, stream_start_time, monitor_start_time, channel) VALUES (?, ?, ?, ?, ?)",
+                (user_id, vod_id, stream_start, session_time, channel.lower() if channel else None),
             )
             await db.commit()
 
@@ -186,14 +208,15 @@ class SQLiteDatabaseService(BaseDatabaseService):
         avg_pos_score: float,
         avg_neg_score: float,
         total_messages: int,
+        vod_id: Optional[str] = None,
     ) -> None:
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("PRAGMA busy_timeout = 5000")
             await db.execute(
                 """
                 INSERT OR REPLACE INTO chat_metrics 
-                (channel, minute_timestamp, pos_count, neu_count, neg_count, avg_pos_score, avg_neg_score, total_messages)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (channel, minute_timestamp, pos_count, neu_count, neg_count, avg_pos_score, avg_neg_score, total_messages, vod_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     channel.lower(),
@@ -204,6 +227,7 @@ class SQLiteDatabaseService(BaseDatabaseService):
                     avg_pos_score,
                     avg_neg_score,
                     total_messages,
+                    vod_id,
                 ),
             )
             await db.commit()
@@ -258,10 +282,14 @@ class SQLiteDatabaseService(BaseDatabaseService):
         channel: str,
         start_ts: Optional[float] = None,
         end_ts: Optional[float] = None,
+        vod_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         query = "SELECT * FROM chat_metrics WHERE channel = ?"
         params: List[Any] = [channel.lower()]
 
+        if vod_id:
+            query += " AND vod_id = ?"
+            params.append(vod_id)
         if start_ts is not None:
             query += " AND minute_timestamp >= ?"
             params.append(int(start_ts))
@@ -277,6 +305,37 @@ class SQLiteDatabaseService(BaseDatabaseService):
             rows = await cursor.fetchall()
 
         return [dict(r) for r in rows]
+
+    async def get_channel_sessions(
+        self,
+        channel: str,
+    ) -> List[Dict[str, Any]]:
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                """
+                SELECT 
+                    cm.vod_id,
+                    MIN(cm.minute_timestamp) as first_minute,
+                    MAX(cm.minute_timestamp) as last_minute,
+                    SUM(cm.total_messages) as total_messages,
+                    si.stream_start_time
+                FROM chat_metrics cm
+                LEFT JOIN (
+                    SELECT vod_id, MIN(stream_start_time) as stream_start_time
+                    FROM session_info
+                    WHERE stream_start_time IS NOT NULL
+                    GROUP BY vod_id
+                ) si ON cm.vod_id = si.vod_id
+                WHERE cm.channel = ? AND cm.vod_id IS NOT NULL AND cm.vod_id != ''
+                GROUP BY cm.vod_id
+                ORDER BY first_minute DESC
+                LIMIT 20
+                """,
+                (channel.lower(),),
+            )
+            rows = await cursor.fetchall()
+            return [dict(r) for r in rows]
 
     async def get_recent_messages(
         self, channel: str, limit: int = 50
@@ -408,6 +467,7 @@ class DynamoDBDatabaseService(BaseDatabaseService):
         vod_id: str,
         stream_start: Optional[float],
         session_time: float,
+        channel: Optional[str] = None,
     ) -> None:
         def _write():
             item = {
@@ -418,6 +478,8 @@ class DynamoDBDatabaseService(BaseDatabaseService):
                 "stream_start": str(stream_start) if stream_start else "",
                 "session_time": str(session_time),
             }
+            if channel:
+                item["stream_channel"] = channel.lower()
             self._messages_table.put_item(Item=item)
 
         await asyncio.to_thread(_write)
@@ -432,6 +494,7 @@ class DynamoDBDatabaseService(BaseDatabaseService):
         avg_pos_score: float,
         avg_neg_score: float,
         total_messages: int,
+        vod_id: Optional[str] = None,
     ) -> None:
         def _write():
             item = {
@@ -444,6 +507,8 @@ class DynamoDBDatabaseService(BaseDatabaseService):
                 "avg_neg_score": str(round(avg_neg_score, 4)),
                 "total_messages": total_messages,
             }
+            if vod_id:
+                item["vod_id"] = str(vod_id)
             self._metrics_table.put_item(Item=item)
 
         await asyncio.to_thread(_write)
@@ -498,6 +563,7 @@ class DynamoDBDatabaseService(BaseDatabaseService):
         channel: str,
         start_ts: Optional[float] = None,
         end_ts: Optional[float] = None,
+        vod_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         def _query():
             from boto3.dynamodb.conditions import Key
@@ -515,9 +581,11 @@ class DynamoDBDatabaseService(BaseDatabaseService):
                 ScanIndexForward=True,
             )
             items = response.get("Items", [])
-            # Format numbers properly
             result = []
             for it in items:
+                item_vid = it.get("vod_id")
+                if vod_id and item_vid != vod_id:
+                    continue
                 result.append(
                     {
                         "channel": it.get("channel"),
@@ -528,9 +596,45 @@ class DynamoDBDatabaseService(BaseDatabaseService):
                         "avg_pos_score": float(it.get("avg_pos_score", 0.0)),
                         "avg_neg_score": float(it.get("avg_neg_score", 0.0)),
                         "total_messages": int(it.get("total_messages", 0)),
+                        "vod_id": item_vid,
                     }
                 )
             return result
+
+        return await asyncio.to_thread(_query)
+
+    async def get_channel_sessions(
+        self,
+        channel: str,
+    ) -> List[Dict[str, Any]]:
+        def _query():
+            from boto3.dynamodb.conditions import Key
+
+            kce = Key("channel").eq(channel.lower())
+            response = self._metrics_table.query(
+                KeyConditionExpression=kce,
+                ScanIndexForward=True,
+            )
+            items = response.get("Items", [])
+            vod_map = {}
+            for it in items:
+                vid = it.get("vod_id")
+                if not vid:
+                    continue
+                min_ts = int(it.get("minute_timestamp", 0))
+                msgs = int(it.get("total_messages", 0))
+                if vid not in vod_map:
+                    vod_map[vid] = {
+                        "vod_id": vid,
+                        "first_minute": min_ts,
+                        "last_minute": min_ts,
+                        "total_messages": msgs,
+                    }
+                else:
+                    vod_map[vid]["last_minute"] = max(vod_map[vid]["last_minute"], min_ts)
+                    vod_map[vid]["total_messages"] += msgs
+            sessions = sorted(vod_map.values(), key=lambda s: s["first_minute"], reverse=True)
+            return sessions[:20]
 
         return await asyncio.to_thread(_query)
 

@@ -308,6 +308,7 @@ class TwitchSentimentWorker:
                                 avg_pos,
                                 avg_neg,
                                 self.minute_stats["total"],
+                                vod_id=self.vod_id,
                             )
 
                         # Reset accumulator
@@ -386,6 +387,7 @@ class TwitchSentimentWorker:
             vod_id=self.vod_id or "",
             stream_start=self.stream_start,
             session_time=time.time(),
+            channel=self.channel_name,
         )
 
         # Connect Chat
@@ -455,6 +457,7 @@ class TwitchSentimentWorker:
                     avg_pos,
                     avg_neg,
                     self.minute_stats["total"],
+                    vod_id=self.vod_id,
                 )
             except Exception as e:
                 logger.error(f"Error saving final minute metric: {e}")

@@ -11,3 +11,9 @@ plotly
 pandas
 python-dotenv
 ruff
+fastapi
+uvicorn[standard]
+pydantic
+boto3
+httpx
+websockets

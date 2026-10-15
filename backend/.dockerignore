@@ -1,3 +1,5 @@
+.venv
+.git
 .env
 creds/
 models/
@@ -5,3 +7,5 @@ __pycache__
 .vscode
 *.pyc
 data/
+twitch_data.db
+.pytest_cache

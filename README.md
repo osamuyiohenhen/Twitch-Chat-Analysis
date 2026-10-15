@@ -5,7 +5,7 @@
 ![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Transformers-yellow)
 ![License](https://img.shields.io/badge/License-Apache%202.0-green)
 
-### [Click for Live Demo](https://muyihenhen-twitch-chat-sentiment-engine.hf.space)
+### [(WIP) Click for Live Demo](https://muyihenhen-twitch-chat-sentiment-engine.hf.space)
 > **Note:** If the app appears unresponsive, please refresh the page to reconnect.
 
 ### Demo
@@ -48,26 +48,59 @@ Training is compute-heavy, but cloud inference APIs are too slow for real-time c
 - **Inference:** CPU deployment on Hugging Face Spaces, GPU-accelerated locally on RTX 4050 using FP16 mixed precision
 - **Performance:** <60ms latency locally, ~200ms on cloud CPU
 
+---
+
+### 4. Swappable Backend & Cloud Storage
+The inference engine is decoupled from the UI via a FastAPI layer:
+- **Dual-Engine Storage:** Supports zero-dependency local development via SQLite or cloud scaling via Amazon DynamoDB (two-table design for raw logs and minute rollups).
+- **Real-Time Streaming:** Broadcasts analyzed sentiment directly to connected web clients over WebSockets.
+- **Headless Authentication:** Silent OAuth token auto-refresh with no browser popups, enabling headless container deployment.
+
+## Project Structure
+
+```text
+Twitch-Chat-Analysis/
+├── backend/                   # FastAPI backend, async workers & ML pipeline
+│   ├── api.py                 # REST API endpoints and WebSocket gateway
+│   ├── primary.py             # TwitchSentimentWorker & chat stream consumer
+│   ├── run.py                 # Development server entry point
+│   ├── config.py              # Environment configuration & constants
+│   ├── src/
+│   │   ├── db_service.py      # Abstracted SQLite and AWS DynamoDB layers
+│   │   ├── utils/             # Hugging Face model loader & cache
+│   │   └── training/          # MLM pre-training & fine-tuning scripts
+│   ├── scripts/               # Twitch OAuth CLI & test scripts
+│   └── tests/                 # Unit & integration test suite
+├── frontend/                  # Vue 3 + TypeScript + Vite web dashboard
+│   ├── src/
+│   │   ├── components/        # Live sentiment bars, activity timeline, sidebar
+│   │   ├── stores/            # Pinia global reactive state (WebSocket stream)
+│   │   ├── services/          # REST and WebSocket client
+│   │   └── types/             # TypeScript schemas & sentiment definitions
+│   └── README.md              # In-depth frontend guide & architecture overview
+├── requirements.txt           # Python backend dependencies & libraries
+└── README.md                  # Project overview & quickstart
+```
+
 ## Tech Stack
 
-- **Language:** Python 3.10+
-- **ML:** PyTorch, Hugging Face Transformers
-- **Async:** `asyncio`, `aiofiles`, `aiocsv`
-- **Dashboard:** Streamlit, Plotly, HTML/JS
-- **API:** `twitchAPI` (OAuth2)
-- **DevOps:** GitHub Actions, Ruff
+- **Language:** Python 3.10+, TypeScript 5+
+- **Backend & APIs:** FastAPI, Uvicorn (ASGI), WebSockets, `twitchAPI`
+- **ML & NLP:** PyTorch (GPU / CPU), Hugging Face Transformers (Custom RoBERTa)
+- **Data & Cloud Storage:** AWS DynamoDB (Boto3), SQLite (`aiosqlite`)
+- **Frontend Dashboard:** Vue 3 (Composition API), Vite, Tailwind CSS, Pinia, Chart.js (`vue-chartjs`), Lucide Icons
+- **DevOps & Testing:** Docker, Docker Compose, GitHub Actions, Python `unittest`
 
 
-## Getting Started
+## Getting Started Locally
 
 ### 1. Clone the Repo
 ```bash
-git clone [https://github.com/osamuyiohenhen/Twitch-Chat-Analysis.git](https://github.com/osamuyiohenhen/Twitch-Chat-Analysis.git)
+git clone https://github.com/osamuyiohenhen/Twitch-Chat-Analysis.git
 cd Twitch-Chat-Analysis
 ```
 
-### 2. Set up the Environment
-Create a virtual environment to keep dependencies clean.
+### 2. Set up Python Environment
 ```bash
 python -m venv .venv
 # Windows
@@ -76,57 +109,72 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install PyTorch
-
-If you have an NVIDIA GPU, considering installing CUDA-enabled PyTorch first to have improved inference performance:
+### 3. Install PyTorch & Backend Dependencies
+For NVIDIA GPUs (CUDA acceleration):
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu126
 ```
-
-If you do not have one, you must install the CPU-only version of PyTorch:
-
+For CPU-only environments:
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 ```
-
-### 4. Install Dependencies
+Install backend requirements:
 ```bash
 pip install -r requirements.txt
 ```
 
-### 5. Environment Variables
-
-Create a `.env` file in the root folder:
-```
+### 4. Configure Environment Variables
+Create a `.env` file in `backend/` (or repository root) with your Twitch Developer credentials:
+```env
 TWITCH_CLIENT_ID=your_twitch_client_id
 TWITCH_CLIENT_SECRET=your_twitch_client_secret
 ```
 
-**Do not commit `.env`** — Add to `.gitignore` to keep secrets safe.
-
-The app uses `python-dotenv` to automatically load these variables.
-
-### 6. Run the Dashboard
-
+### 5. Generate Twitch OAuth Tokens
+Run the interactive authorization CLI once locally:
 ```bash
-streamlit run app.py
+python scripts/auth_twitch.py
+```
+This launches a browser window to authenticate with Twitch and automatically saves the paired `TWITCH_USER_TOKEN` and long-lived `TWITCH_REFRESH_TOKEN` to your `.env` file for silent auto-refresh.
+
+---
+
+### 6. Run the Application
+
+#### Step A: Start the FastAPI Backend
+```bash
+cd backend
+python run.py
+```
+*API runs at `http://localhost:8000`. Interactive Swagger docs available at [http://localhost:8000/docs](http://localhost:8000/docs).*
+
+#### Step B: Start the Vue 3 Frontend
+Open a separate terminal window:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+*Frontend runs at `http://localhost:5173` with instant hot-module replacement (HMR).*
+
+#### Running Backend Tests
+```bash
+cd backend
+python -m unittest discover -s tests
 ```
 
-1. Open the sidebar and enter a Twitch channel name (e.g., `xQc`)
-2. Click "Connect"
-3. Watch real-time sentiment analysis in the dashboard
-
-(Or use `feeder.py` to test with mock data if you don't want to go live)
+---
 
 ## Roadmap
 
-- [x] **Async Scraper:** High-throughput chat scraper
+- [x] **Async Ingestion Pipeline:** High-throughput WebSocket scraper using `twitchAPI`
 - [x] **Domain Adaptation:** MLM training on Twitch slang
-- [x] **CI/CD Pipeline:** Automated testing via GitHub Actions
-- [x] **Fine-Tuning:** Sentiment classifier on labeled data
-- [x] **Dashboard:** Streamlit UI with live sentiment tracking
-- [x] **Cloud Deployment:** Dockerized and deployed on Hugging Face Spaces
-- [ ] **Adapters:** Lightweight adapters for specific streamer communities
+- [x] **Sentiment Fine-Tuning:** Custom 3-class classifier tuned on gaming vernacular
+- [x] **Backend Infrastructure:** FastAPI service with REST endpoints, WebSockets, and lifespan model caching
+- [x] **Database Abstraction Layer:** Pluggable storage architecture supporting local SQLite and AWS DynamoDB
+- [x] **AWS Cloud Deployment:** Production deployment on AWS EC2 with DynamoDB tables
+- [x] **Modern Web Frontend:** Responsive Vue 3 + TypeScript dashboard with live streaming charts, activity timeline, and VOD timestamp deep-linking
+- [ ] **LoRA Adapters:** Parameter-efficient adapters tailored to specific streamer sub-communities
 
 ## Acknowledgements & License
 

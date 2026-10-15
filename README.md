@@ -78,6 +78,7 @@ Twitch-Chat-Analysis/
 │   │   ├── services/          # REST and WebSocket client
 │   │   └── types/             # TypeScript schemas & sentiment definitions
 │   └── README.md              # In-depth frontend guide & architecture overview
+├── requirements.txt           # Python backend dependencies & libraries
 └── README.md                  # Project overview & quickstart
 ```
 
@@ -119,7 +120,6 @@ pip install torch --index-url https://download.pytorch.org/whl/cpu
 ```
 Install backend requirements:
 ```bash
-cd backend
 pip install -r requirements.txt
 ```
 

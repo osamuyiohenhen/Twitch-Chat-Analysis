@@ -15,8 +15,7 @@ RUN pip install --no-cache-dir \
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .    
-COPY . .
+COPY backend/ .
 
 EXPOSE 7860
 # Expose FastAPI backend HTTP / WebSocket port

@@ -52,7 +52,10 @@ function onSessionChange(val: string) {
 
 function formatSessionLabel(sess: StreamSessionItem): string {
   const isCurrent = sess.vod_id === store.vodId;
-  const dateStr = new Date(sess.first_minute * 1000).toLocaleDateString(undefined, {
+  const dateSource = sess.stream_start_time && sess.stream_start_time > 0
+    ? sess.stream_start_time * 1000
+    : sess.first_minute * 1000;
+  const dateStr = new Date(dateSource).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
@@ -61,6 +64,13 @@ function formatSessionLabel(sess: StreamSessionItem): string {
   const msgs = sess.total_messages >= 1000
     ? `${(sess.total_messages / 1000).toFixed(1)}k msgs`
     : `${sess.total_messages} msgs`;
+
+  if (sess.stream_title) {
+    const cleanTitle = sess.stream_title.length > 40
+      ? sess.stream_title.slice(0, 37) + '...'
+      : sess.stream_title;
+    return `"${cleanTitle}" • ${dateStr} (${msgs})${isCurrent ? ' [Current]' : ''}`;
+  }
   return `${dateStr} (VOD ${sess.vod_id}, ${msgs})${isCurrent ? ' [Current]' : ''}`;
 }
 
@@ -245,7 +255,7 @@ function openVodLink() {
         </h4>
         <p class="text-xs opacity-60">
           <span v-if="store.selectedSessionVodId">
-            Viewing Historical VOD {{ store.selectedSessionVodId }}
+            Viewing: {{ store.currentSessionInfo?.stream_title ? `"${store.currentSessionInfo.stream_title}" (VOD ${store.selectedSessionVodId})` : `Historical VOD ${store.selectedSessionVodId}` }}
           </span>
           <span v-else>
             Stream Time (VOD timestamp) • Auto-updates every 10s

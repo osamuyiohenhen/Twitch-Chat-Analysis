@@ -40,6 +40,7 @@ class BaseDatabaseService(abc.ABC):
         stream_start: Optional[float],
         session_time: float,
         channel: Optional[str] = None,
+        stream_title: Optional[str] = None,
     ) -> None:
         """Save broadcaster stream session metadata."""
         pass
@@ -132,11 +133,16 @@ class SQLiteDatabaseService(BaseDatabaseService):
                     vod_id TEXT,
                     stream_start_time REAL,
                     monitor_start_time REAL,
-                    channel TEXT
+                    channel TEXT,
+                    stream_title TEXT
                 )
             """)
             try:
                 await db.execute("ALTER TABLE session_info ADD COLUMN channel TEXT")
+            except Exception:
+                pass
+            try:
+                await db.execute("ALTER TABLE session_info ADD COLUMN stream_title TEXT")
             except Exception:
                 pass
 
@@ -189,12 +195,20 @@ class SQLiteDatabaseService(BaseDatabaseService):
         stream_start: Optional[float],
         session_time: float,
         channel: Optional[str] = None,
+        stream_title: Optional[str] = None,
     ) -> None:
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("PRAGMA busy_timeout = 5000")
             await db.execute(
-                "INSERT INTO session_info (user_id, vod_id, stream_start_time, monitor_start_time, channel) VALUES (?, ?, ?, ?, ?)",
-                (user_id, vod_id, stream_start, session_time, channel.lower() if channel else None),
+                "INSERT INTO session_info (user_id, vod_id, stream_start_time, monitor_start_time, channel, stream_title) VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    user_id,
+                    vod_id,
+                    stream_start,
+                    session_time,
+                    channel.lower() if channel else None,
+                    stream_title,
+                ),
             )
             await db.commit()
 
@@ -319,12 +333,13 @@ class SQLiteDatabaseService(BaseDatabaseService):
                     MIN(cm.minute_timestamp) as first_minute,
                     MAX(cm.minute_timestamp) as last_minute,
                     SUM(cm.total_messages) as total_messages,
-                    si.stream_start_time
+                    si.stream_start_time,
+                    si.stream_title
                 FROM chat_metrics cm
                 LEFT JOIN (
-                    SELECT vod_id, MIN(stream_start_time) as stream_start_time
+                    SELECT vod_id, MIN(stream_start_time) as stream_start_time, MAX(stream_title) as stream_title
                     FROM session_info
-                    WHERE stream_start_time IS NOT NULL
+                    WHERE stream_start_time IS NOT NULL OR stream_title IS NOT NULL
                     GROUP BY vod_id
                 ) si ON cm.vod_id = si.vod_id
                 WHERE cm.channel = ? AND cm.vod_id IS NOT NULL AND cm.vod_id != ''
@@ -468,6 +483,7 @@ class DynamoDBDatabaseService(BaseDatabaseService):
         stream_start: Optional[float],
         session_time: float,
         channel: Optional[str] = None,
+        stream_title: Optional[str] = None,
     ) -> None:
         def _write():
             item = {
@@ -480,6 +496,8 @@ class DynamoDBDatabaseService(BaseDatabaseService):
             }
             if channel:
                 item["stream_channel"] = channel.lower()
+            if stream_title:
+                item["stream_title"] = stream_title
             self._messages_table.put_item(Item=item)
 
         await asyncio.to_thread(_write)
@@ -629,6 +647,8 @@ class DynamoDBDatabaseService(BaseDatabaseService):
                         "first_minute": min_ts,
                         "last_minute": min_ts,
                         "total_messages": msgs,
+                        "stream_start_time": None,
+                        "stream_title": None,
                     }
                 else:
                     vod_map[vid]["last_minute"] = max(vod_map[vid]["last_minute"], min_ts)

@@ -40,6 +40,7 @@ export interface StreamSessionItem {
   last_minute: number;
   total_messages: number;
   stream_start_time?: number | null;
+  stream_title?: string | null;
 }
 
 export interface ChannelStatus {

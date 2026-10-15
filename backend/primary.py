@@ -108,29 +108,34 @@ def load_model():
 
 async def get_session_info(
     twitch: Twitch, channel_name: str
-) -> Tuple[Optional[str], Optional[str], Optional[float]]:
-    """Fetch broadcaster user ID, latest VOD ID, and stream start time."""
+) -> Tuple[Optional[str], Optional[str], Optional[float], Optional[str]]:
+    """Fetch broadcaster user ID, latest VOD ID, stream start time, and stream/VOD title."""
     user_id = None
     async for user in twitch.get_users(logins=[channel_name]):
         user_id = user.id
         break
 
     if not user_id:
-        return None, None, None
+        return None, None, None, None
 
     vod_id = None
+    vod_title = None
     async for video in twitch.get_videos(
         user_id=user_id, video_type=VideoType.ARCHIVE, sort=SortMethod.TIME
     ):
         vod_id = video.id
+        vod_title = getattr(video, "title", None)
         break
 
     stream_started_at = None
+    stream_title = None
     async for stream in twitch.get_streams(user_id=[user_id]):
         stream_started_at = stream.started_at.timestamp()
+        stream_title = getattr(stream, "title", None)
         break
 
-    return user_id, vod_id, stream_started_at
+    final_title = stream_title or vod_title
+    return user_id, vod_id, stream_started_at, final_title
 
 
 class TwitchSentimentWorker:
@@ -163,6 +168,7 @@ class TwitchSentimentWorker:
         self.user_id: Optional[str] = None
         self.vod_id: Optional[str] = None
         self.stream_start: Optional[float] = None
+        self.stream_title: Optional[str] = None
 
         # Minute metrics accumulator
         self.current_minute_ts: int = int(time.time() // 60 * 60)
@@ -379,7 +385,7 @@ class TwitchSentimentWorker:
             ) from e
 
         # Session metadata
-        self.user_id, self.vod_id, self.stream_start = await get_session_info(
+        self.user_id, self.vod_id, self.stream_start, self.stream_title = await get_session_info(
             self.twitch, self.channel_name
         )
         await self.db_service.save_session_info(
@@ -388,6 +394,7 @@ class TwitchSentimentWorker:
             stream_start=self.stream_start,
             session_time=time.time(),
             channel=self.channel_name,
+            stream_title=self.stream_title,
         )
 
         # Connect Chat
@@ -398,7 +405,7 @@ class TwitchSentimentWorker:
         try:
             await self.chat.join_room(self.channel_name)
             logger.info(
-                f"Successfully joined Twitch room: #{self.channel_name} (VOD ID: {self.vod_id})"
+                f"Successfully joined Twitch room: #{self.channel_name} (VOD ID: {self.vod_id}, Title: {self.stream_title})"
             )
         except Exception as e:
             logger.error(f"Failed to join Twitch room #{self.channel_name}: {e}")

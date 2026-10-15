@@ -140,12 +140,24 @@ class TestDatabaseService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(vod100_metrics[0]["vod_id"], "vod_100")
         self.assertEqual(vod100_metrics[0]["total_messages"], 17)
 
+        # Test save_session_info with stream_title
+        await self.db.save_session_info(
+            user_id="user_100",
+            vod_id="vod_100",
+            stream_start=time.time(),
+            session_time=time.time(),
+            channel="streamer3",
+            stream_title="Chill Gaming Stream",
+        )
+
         # Test get_channel_sessions
         sessions = await self.db.get_channel_sessions("streamer3")
         self.assertEqual(len(sessions), 2)
         vod_ids = [s["vod_id"] for s in sessions]
         self.assertIn("vod_100", vod_ids)
         self.assertIn("vod_200", vod_ids)
+        vod_100_session = next(s for s in sessions if s["vod_id"] == "vod_100")
+        self.assertEqual(vod_100_session.get("stream_title"), "Chill Gaming Stream")
 
 
 class TestFastAPIEndpoints(unittest.TestCase):

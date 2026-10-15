@@ -166,6 +166,7 @@ class StreamSessionItem(BaseModel):
     last_minute: int
     total_messages: int
     stream_start_time: Optional[float] = None
+    stream_title: Optional[str] = None
 
 
 # --- Helper Functions for State Access ---

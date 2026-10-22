@@ -75,7 +75,7 @@ const lineOptions: ChartOptions<'line'> = {
       labels: {
         color: '#a1a1aa',
         boxWidth: 12,
-        font: { size: 11, family: 'sans-serif' },
+        font: { size: 11, family: "'Inter', sans-serif" },
       },
     },
     tooltip: {

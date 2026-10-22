@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --color-twitch-purple: #9146FF;
   --color-twitch-purple-hover: #772ce8;
   --color-sentiment-pos: #00CC96;
@@ -9,7 +10,7 @@
 }
 
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   color-scheme: dark;
 }
 
@@ -28,6 +29,7 @@ body {
   margin: 0;
   min-height: 100vh;
   overflow-x: hidden;
+  font-family: inherit;
 }
 
 /* Custom modern scrollbar */

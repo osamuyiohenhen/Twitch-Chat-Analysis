@@ -31,6 +31,69 @@ logging.basicConfig(
 )
 
 
+# Idle timeout in seconds (default 300s / 5 minutes)
+IDLE_TIMEOUT_SECONDS = getattr(config, "IDLE_TIMEOUT_SECONDS", 300)
+
+
+async def check_idle_workers_once(app: FastAPI) -> None:
+    """
+    Check all active workers and auto-disconnect any that have had 0 active
+    WebSocket viewers for longer than IDLE_TIMEOUT_SECONDS.
+    """
+    workers = get_current_workers()
+    idle_tracker = get_idle_tracker()
+    now = time.time()
+    timeout = getattr(config, "IDLE_TIMEOUT_SECONDS", 300)
+
+    for channel, worker in list(workers.items()):
+        if not getattr(worker, "is_running", False):
+            workers.pop(channel, None)
+            idle_tracker.pop(channel, None)
+            continue
+
+        active_subs = len(getattr(worker, "subscribers", []))
+        if active_subs == 0:
+            if channel not in idle_tracker:
+                idle_tracker[channel] = now
+            else:
+                elapsed = now - idle_tracker[channel]
+                if elapsed >= timeout:
+                    logger.info(
+                        f"Channel #{channel} has had 0 active viewers for {int(elapsed)}s. "
+                        f"Auto-disconnecting to conserve resources."
+                    )
+                    try:
+                        await worker.stop()
+                    except Exception as err:
+                        logger.warning(
+                            f"Error auto-stopping idle worker #{channel}: {err}"
+                        )
+                    workers.pop(channel, None)
+                    idle_tracker.pop(channel, None)
+        else:
+            # Active viewers connected, reset idle timer
+            idle_tracker.pop(channel, None)
+
+
+async def monitor_idle_workers(app: FastAPI, check_interval: float = 15.0):
+    """
+    Background supervisor task that periodically checks for idle Twitch channel workers.
+    If a worker has 0 active WebSocket subscribers for more than IDLE_TIMEOUT_SECONDS (5 min),
+    it automatically shuts down to preserve EC2 CPU, memory, and database disk space.
+    """
+    logger.info(
+        f"Idle worker supervisor initialized (timeout: {getattr(config, 'IDLE_TIMEOUT_SECONDS', 300)}s)."
+    )
+    while True:
+        try:
+            await asyncio.sleep(check_interval)
+            await check_idle_workers_once(app)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(f"Error in monitor_idle_workers supervisor: {e}")
+
+
 # --- Lifespan Context Manager ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -59,8 +122,17 @@ async def lifespan(app: FastAPI):
 
     # Channel workers dictionary: channel_name -> TwitchSentimentWorker
     app.state.workers: Dict[str, TwitchSentimentWorker] = {}
+    app.state.idle_since: Dict[str, float] = {}
+
+    supervisor_task = asyncio.create_task(monitor_idle_workers(app))
 
     yield
+
+    supervisor_task.cancel()
+    try:
+        await supervisor_task
+    except asyncio.CancelledError:
+        pass
 
     # Shutdown logic
     logger.info("Shutting down active Twitch channel workers...")
@@ -126,6 +198,7 @@ class ChannelStatusResponse(BaseModel):
     vod_id: Optional[str] = None
     stream_start: Optional[float] = None
     active_subscribers: int
+    idle_seconds: Optional[float] = None
 
 
 class RealtimeMetricsResponse(BaseModel):
@@ -184,6 +257,13 @@ def get_current_workers() -> Dict[str, TwitchSentimentWorker]:
     return app.state.workers
 
 
+def get_idle_tracker() -> Dict[str, float]:
+    """Safely obtain idle tracker dictionary from app.state."""
+    if not hasattr(app.state, "idle_since") or app.state.idle_since is None:
+        app.state.idle_since = {}
+    return app.state.idle_since
+
+
 # --- REST Endpoints ---
 @app.get("/health", response_model=HealthResponse, tags=["System"])
 async def health_check():
@@ -237,6 +317,7 @@ async def connect_channel(channel_name: str):
     try:
         await worker.start()
         workers[channel] = worker
+        get_idle_tracker()[channel] = time.time()
         return ConnectResponse(
             channel=channel,
             status="connected",
@@ -271,6 +352,7 @@ async def disconnect_channel(channel_name: str):
     worker = workers[channel]
     await worker.stop()
     del workers[channel]
+    get_idle_tracker().pop(channel, None)
 
     return DisconnectResponse(
         channel=channel,
@@ -291,12 +373,19 @@ async def get_channel_status(channel_name: str):
     worker = workers.get(channel)
 
     is_running = worker.is_running if worker else False
+    active_subs = len(worker.subscribers) if worker else 0
+    idle_tracker = get_idle_tracker()
+    idle_sec = None
+    if is_running and active_subs == 0 and channel in idle_tracker:
+        idle_sec = round(time.time() - idle_tracker[channel], 1)
+
     return ChannelStatusResponse(
         channel=channel,
         connected=is_running,
         vod_id=worker.vod_id if worker else None,
         stream_start=worker.stream_start if worker else None,
-        active_subscribers=len(worker.subscribers) if worker else 0,
+        active_subscribers=active_subs,
+        idle_seconds=idle_sec,
     )
 
 

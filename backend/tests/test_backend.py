@@ -290,5 +290,52 @@ class TestHeadlessWorkerAuth(unittest.IsolatedAsyncioTestCase):
 
 
 
+class DummyWorker:
+    def __init__(self, is_running=True):
+        self.is_running = is_running
+        self.subscribers = set()
+        self.stopped = False
+        self.vod_id = None
+        self.stream_start = None
+
+    async def stop(self):
+        self.is_running = False
+        self.stopped = True
+
+
+class TestIdleWorkerSupervisor(unittest.IsolatedAsyncioTestCase):
+    """Test idle channel worker auto-disconnect supervisor."""
+
+    async def test_idle_worker_auto_disconnect_after_timeout(self):
+        """Worker with 0 subscribers for longer than IDLE_TIMEOUT_SECONDS should auto-stop."""
+        from api import app, check_idle_workers_once, get_current_workers, get_idle_tracker
+        import config
+
+        worker = DummyWorker(is_running=True)
+        app.state.workers = {"idle_streamer": worker}
+        app.state.idle_since = {"idle_streamer": time.time() - (config.IDLE_TIMEOUT_SECONDS + 5)}
+
+        await check_idle_workers_once(app)
+
+        self.assertTrue(worker.stopped)
+        self.assertNotIn("idle_streamer", get_current_workers())
+        self.assertNotIn("idle_streamer", get_idle_tracker())
+
+    async def test_active_worker_not_disconnected(self):
+        """Worker with active subscribers should reset idle timer and not disconnect."""
+        from api import app, check_idle_workers_once, get_current_workers, get_idle_tracker
+
+        worker = DummyWorker(is_running=True)
+        worker.subscribers.add("dummy_queue")
+        app.state.workers = {"active_streamer": worker}
+        app.state.idle_since = {"active_streamer": time.time() - 500}
+
+        await check_idle_workers_once(app)
+
+        self.assertFalse(worker.stopped)
+        self.assertIn("active_streamer", get_current_workers())
+        self.assertNotIn("active_streamer", get_idle_tracker())
+
+
 if __name__ == "__main__":
     unittest.main()

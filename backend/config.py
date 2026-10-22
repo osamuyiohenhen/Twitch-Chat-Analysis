@@ -15,6 +15,9 @@ bot_list = [
     "potatbotat",
 ]  # Add more known bots
 
+# Channel Worker Resource Management
+IDLE_TIMEOUT_SECONDS = int(os.getenv("IDLE_TIMEOUT_SECONDS", "300"))  # Auto-disconnect after 5 min idle
+
 # Database & AWS DynamoDB Configuration
 DB_TYPE = os.getenv("DB_TYPE", "sqlite").lower()  # 'sqlite' or 'dynamodb'
 SQLITE_DB_PATH = os.getenv(

@@ -5,11 +5,11 @@
 ![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Transformers-yellow)
 ![License](https://img.shields.io/badge/License-Apache%202.0-green)
 
-### [(WIP) Click for Live Demo](https://muyihenhen-twitch-chat-sentiment-engine.hf.space)
+### [Click for Live Demo](https://ec2-3-208-20-48.compute-1.amazonaws.com/)
 > **Note:** If the app appears unresponsive, please refresh the page to reconnect.
 
 ### Demo
-![Demo of Twitch Chat Analyzer](proj_demo.gif)
+![Demo of Twitch Chat Analyzer](proj_demo.png)
 *A preview of the engine connecting to a live channel and processing messages in real-time.*
 
 ---
@@ -133,7 +133,7 @@ TWITCH_CLIENT_SECRET=your_twitch_client_secret
 ### 5. Generate Twitch OAuth Tokens
 Run the interactive authorization CLI once locally:
 ```bash
-python scripts/auth_twitch.py
+python backend/scripts/auth_twitch.py
 ```
 This launches a browser window to authenticate with Twitch and automatically saves the paired `TWITCH_USER_TOKEN` and long-lived `TWITCH_REFRESH_TOKEN` to your `.env` file for silent auto-refresh.
 

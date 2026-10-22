@@ -5,7 +5,7 @@
 ![HuggingFace](https://img.shields.io/badge/🤗%20Hugging%20Face-Transformers-yellow)
 ![License](https://img.shields.io/badge/License-Apache%202.0-green)
 
-### [Click for Live Demo](https://ec2-3-208-20-48.compute-1.amazonaws.com/)
+### [Click for Live Demo](http://ec2-54-196-206-108.compute-1.amazonaws.com/)
 > **Note:** If the app appears unresponsive, please refresh the page to reconnect.
 
 ### Demo

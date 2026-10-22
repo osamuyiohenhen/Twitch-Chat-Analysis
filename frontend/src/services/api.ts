@@ -7,8 +7,17 @@ import type {
   TimelineMetricItem,
 } from '../types/sentiment';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-export const WS_BASE = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+const isLocal =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const API_BASE =
+  import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:8000' : '');
+export const WS_BASE =
+  import.meta.env.VITE_WS_URL ||
+  (isLocal
+    ? 'ws://localhost:8000'
+    : `${typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${typeof window !== 'undefined' ? window.location.host : 'localhost:8000'}`);
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
